@@ -2,7 +2,9 @@
 set -euo pipefail
 
 CLAUDE_TARGET="$HOME/.claude/skills"
-VSCODE_PROMPTS_TARGET="$HOME/Library/Application Support/Code/User/prompts/my-dev-skills"
+VSCODE_PROMPTS_BASE_DEFAULT="${VSCODE_PROMPTS_BASE:-$HOME/Library/Application Support/Code/User/prompts}"
+VSCODE_PROMPTS_NAME="${VSCODE_PROMPTS_NAME:-just-common-skills}"
+VSCODE_PROMPTS_TARGET="${VSCODE_PROMPTS_TARGET:-$VSCODE_PROMPTS_BASE_DEFAULT/$VSCODE_PROMPTS_NAME}"
 
 usage() {
   cat <<'EOF'
@@ -15,6 +17,11 @@ Options:
   --with-vscode-prompts  Also remove VS Code prompts mirror path.
   --force                Remove without confirmation.
   -h, --help             Show help.
+
+Environment overrides:
+  VSCODE_PROMPTS_BASE    Base prompts directory (default: ~/Library/Application Support/Code/User/prompts)
+  VSCODE_PROMPTS_NAME    Subdirectory name under base (default: just-common-skills)
+  VSCODE_PROMPTS_TARGET  Full target path. If set, overrides BASE/NAME composition.
 EOF
 }
 

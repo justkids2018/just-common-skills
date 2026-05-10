@@ -45,5 +45,5 @@ Cross-step safety rule: run `just-careful` before destructive operations.
 
 ## Notes
 
-- Baseline canonical path is `common/baseline/`.
+- Baseline canonical path is `common-prompt/baseline/`.
 - References keep only reusable templates. Execution-specific details live in worker skills.

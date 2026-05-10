@@ -51,7 +51,7 @@ You can still create a project-local link manually:
 Run:
 
 ```bash
-ln -s /absolute/path/to/my_dev_skills/skills /absolute/path/to/target-project/.claude/skills
+ln -s /absolute/path/to/just-common-skills/skills /absolute/path/to/target-project/.claude/skills
 ```
 
 This creates a symlink:
@@ -75,7 +75,7 @@ What it creates in the target project:
 - `.github/copilot-instructions.md` (Copilot skill routing)
 - `.github/skills` (linked to this repo's `skills/`)
 - `.claude/skills` (compatibility alias to `.github/skills`)
-- `.ai/common` (linked to this repo's `common/`)
+- `.ai/common-prompt` (linked to this repo's `common-prompt/`)
 
 Options:
 
@@ -83,6 +83,19 @@ Options:
 ./scripts/bootstrap-project.sh /absolute/path/to/target-project --copy
 ./scripts/bootstrap-project.sh /absolute/path/to/target-project --force
 ```
+
+Quickstart guide:
+
+- [docs/quickstart-new-project.md](docs/quickstart-new-project.md)
+
+For both new and existing projects, use one unified injection command:
+
+```bash
+cd /absolute/path/to/target-project
+bash /absolute/path/to/just-common-skills/scripts/inject-current-project.sh --force
+```
+
+This mode merges existing governance files (append/update managed block), creates missing files, and wires shared assets via symlink.
 
 ## Add A New Skill
 
@@ -107,4 +120,4 @@ Naming rule:
 - Symlink mode means one update in this repo is visible to all linked projects.
 - If a project already has its own `.github/skills` or `.claude/skills` directory, back it up first.
 - Rule governance uses one source of truth: `AGENTS.md` is canonical, `CLAUDE.md` is a soft reference adapter.
-- Baseline governance uses one source of truth: `common/baseline/` is canonical, `docs/baseline/` and skill-local baseline dirs are mirrors.
+- Baseline governance uses one source of truth: `common-prompt/baseline/` is canonical.

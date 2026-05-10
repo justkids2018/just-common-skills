@@ -16,8 +16,9 @@ HUB_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SOURCE_SKILLS="$HUB_ROOT/skills"
 
 CLAUDE_TARGET="$HOME/.claude/skills"
-VSCODE_PROMPTS_BASE_DEFAULT="$HOME/Library/Application Support/Code/User/prompts"
-VSCODE_PROMPTS_TARGET="$VSCODE_PROMPTS_BASE_DEFAULT/my-dev-skills"
+VSCODE_PROMPTS_BASE_DEFAULT="${VSCODE_PROMPTS_BASE:-$HOME/Library/Application Support/Code/User/prompts}"
+VSCODE_PROMPTS_NAME="${VSCODE_PROMPTS_NAME:-just-common-skills}"
+VSCODE_PROMPTS_TARGET="${VSCODE_PROMPTS_TARGET:-$VSCODE_PROMPTS_BASE_DEFAULT/$VSCODE_PROMPTS_NAME}"
 
 WITH_VSCODE_PROMPTS="false"
 COPY_MODE="false"
@@ -36,9 +37,14 @@ Options:
   --force                Replace existing targets without confirmation.
   -h, --help             Show this help.
 
+Environment overrides:
+  VSCODE_PROMPTS_BASE    Base prompts directory (default: ~/Library/Application Support/Code/User/prompts)
+  VSCODE_PROMPTS_NAME    Subdirectory name under base (default: just-common-skills)
+  VSCODE_PROMPTS_TARGET  Full target path. If set, overrides BASE/NAME composition.
+
 Installed targets:
   1) ~/.claude/skills
-  2) ~/Library/Application Support/Code/User/prompts/my-dev-skills (optional)
+  2) $VSCODE_PROMPTS_TARGET (optional)
 
 Notes:
   - Symlink mode keeps skills always up to date with this repo.

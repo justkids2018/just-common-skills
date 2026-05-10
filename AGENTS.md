@@ -27,8 +27,8 @@ Examples:
 ## Baseline Rule
 
 - Default baseline lives in this repo and is shared by all runtimes.
-- Canonical baseline entry: `common/baseline/README.md`.
-- Operational baseline docs: `common/baseline/01-design-principles.md` to `common/baseline/05-git-workflow.md`.
+- Canonical baseline entry: `common-prompt/baseline/README.md`.
+- Operational baseline docs: `common-prompt/baseline/01-design-principles.md` to `common-prompt/baseline/05-git-workflow.md`.
 
 ## Copilot Compatibility
 
@@ -37,7 +37,8 @@ Examples:
 - Copilot project-level guidance should live in `.github/copilot-instructions.md`.
 - Skill assets should be exposed through `.github/skills/` in each target project.
 - `.claude/skills/` can be kept as a compatibility alias to `.github/skills/`.
-- Shared baseline assets should be exposed through `.ai/common/` in each target project.
+- Shared baseline assets should be exposed through `.ai/common-prompt/` in each target project.
+- `.ai/common/` can be kept as a compatibility alias to `.ai/common-prompt/`.
 
 ## Skill Trigger Routing Standard
 
