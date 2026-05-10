@@ -35,7 +35,8 @@ Examples:
 - `AGENTS.md` is canonical for all runtimes.
 - `CLAUDE.md` is the only soft-reference adapter.
 - Copilot project-level guidance should live in `.github/copilot-instructions.md`.
-- Skill assets should be exposed through `.claude/skills/` in each target project.
+- Skill assets should be exposed through `.github/skills/` in each target project.
+- `.claude/skills/` can be kept as a compatibility alias to `.github/skills/`.
 - Shared baseline assets should be exposed through `.ai/common/` in each target project.
 
 ## Skill Trigger Routing Standard

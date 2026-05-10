@@ -73,7 +73,8 @@ What it creates in the target project:
 - `AGENTS.md` (canonical governance)
 - `CLAUDE.md` (soft reference)
 - `.github/copilot-instructions.md` (Copilot skill routing)
-- `.claude/skills` (linked to this repo's `skills/`)
+- `.github/skills` (linked to this repo's `skills/`)
+- `.claude/skills` (compatibility alias to `.github/skills`)
 - `.ai/common` (linked to this repo's `common/`)
 
 Options:
@@ -94,6 +95,7 @@ Run:
 Then edit:
 
 - `skills/just-my-feature/SKILL.md`
+- `skills/just-my-feature/guide.md`
 
 Naming rule:
 
@@ -103,6 +105,6 @@ Naming rule:
 ## Notes
 
 - Symlink mode means one update in this repo is visible to all linked projects.
-- If a project already has its own `.claude/skills` directory, back it up first.
+- If a project already has its own `.github/skills` or `.claude/skills` directory, back it up first.
 - Rule governance uses one source of truth: `AGENTS.md` is canonical, `CLAUDE.md` is a soft reference adapter.
 - Baseline governance uses one source of truth: `common/baseline/` is canonical, `docs/baseline/` and skill-local baseline dirs are mirrors.

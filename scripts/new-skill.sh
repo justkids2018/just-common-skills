@@ -16,6 +16,7 @@ Naming rule:
 
 What it creates:
   - skills/<skill-name>/SKILL.md
+  - skills/<skill-name>/guide.md
   - SKILL.md frontmatter name equals folder name
 
 Example:
@@ -23,6 +24,7 @@ Example:
 
 Generated path:
   skills/just-api-doc-sync/SKILL.md
+  skills/just-api-doc-sync/guide.md
 EOF
 }
 
@@ -47,6 +49,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HUB_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILL_DIR="$HUB_ROOT/skills/$SKILL_NAME"
 SKILL_FILE="$SKILL_DIR/SKILL.md"
+GUIDE_FILE="$SKILL_DIR/guide.md"
 
 if [[ -e "$SKILL_DIR" ]]; then
   echo "Skill already exists: $SKILL_DIR" >&2
@@ -85,4 +88,22 @@ List expected outputs.
 List guardrails and boundaries.
 EOF
 
+cat > "$GUIDE_FILE" <<'EOF'
+# Guide
+
+## Execution Notes
+
+1. Trigger conditions: define when to invoke this skill.
+2. Inputs required: list minimum context needed.
+3. Action flow: describe deterministic execution sequence.
+4. Output contract: define expected artifacts and acceptance checks.
+
+## Boundaries
+
+- Avoid operations outside declared scope.
+- Escalate when required inputs are missing.
+- Prefer deterministic steps over free-form reasoning.
+EOF
+
 echo "Created skill scaffold: $SKILL_FILE"
+echo "Created skill guide: $GUIDE_FILE"
