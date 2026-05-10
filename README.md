@@ -2,6 +2,8 @@
 
 This repository is the single source of truth for reusable skills.
 
+# 目的一句话：
+ 把公共规则和 skills 接入项目，并且始终使用软引用（symlink，不 copy）。
 ## Goal
 
 Keep all reusable skills in one place so multiple projects can apply them directly.
@@ -11,7 +13,7 @@ Keep all reusable skills in one place so multiple projects can apply them direct
 - `skills/`: all reusable skills live here.
 - `scripts/install-skills.sh`: install shared skills into global runtime paths.
 - `scripts/uninstall-skills.sh`: remove globally installed shared skills.
-- `scripts/bootstrap-project.sh`: one-command setup for a new project.
+- `scripts/inject-current-project.sh`: one-command inject/merge setup for any project (symlink mode).
 - `scripts/new-skill.sh`: scaffold a new skill directory.
 
 ## Install For Copilot/Claude Runtimes
@@ -60,15 +62,25 @@ This creates a symlink:
 
 After that, the target project uses the same shared skills directly.
 
-## Bootstrap A New Project (Recommended)
+## Inject Into Any Project (Recommended)
 
-One command to inject governance files, copilot routing, common baseline, and shared skills:
+Use one script with two equivalent execution modes.
+
+Mode A: run from shared hub and pass target path
 
 ```bash
-./scripts/bootstrap-project.sh /absolute/path/to/target-project
+cd /absolute/path/to/just-common-skills
+bash ./scripts/inject-current-project.sh /absolute/path/to/target-project --force
 ```
 
-What it creates in the target project:
+Mode B: run inside target project and call shared script
+
+```bash
+cd /absolute/path/to/target-project
+bash /absolute/path/to/just-common-skills/scripts/inject-current-project.sh --force
+```
+
+What it creates/wires in the target project:
 
 - `AGENTS.md` (canonical governance)
 - `CLAUDE.md` (soft reference)
@@ -77,25 +89,25 @@ What it creates in the target project:
 - `.claude/skills` (compatibility alias to `.github/skills`)
 - `.ai/common-prompt` (linked to this repo's `common-prompt/`)
 
-Options:
-
-```bash
-./scripts/bootstrap-project.sh /absolute/path/to/target-project --copy
-./scripts/bootstrap-project.sh /absolute/path/to/target-project --force
-```
-
 Quickstart guide:
 
 - [docs/quickstart-new-project.md](docs/quickstart-new-project.md)
 
-For both new and existing projects, use one unified injection command:
+Both modes merge existing governance files (append/update managed block), create missing files, and wire shared assets via symlink.
 
-```bash
-cd /absolute/path/to/target-project
-bash /absolute/path/to/just-common-skills/scripts/inject-current-project.sh --force
+## Tell AI What To Do
+
+If you are in another project and want AI to perform setup correctly, tell it this:
+
+```text
+Read /Users/qisd/Documents/development/ai/just-common-skills/README.md first.
+Then execute symlink-only setup (no copy) for current project.
+If current directory is the target project, run:
+bash /Users/qisd/Documents/development/ai/just-common-skills/scripts/inject-current-project.sh --force
+If running from hub directory, run:
+bash /Users/qisd/Documents/development/ai/just-common-skills/scripts/inject-current-project.sh /absolute/path/to/target-project --force
+After execution, verify .github/skills and .ai/common-prompt are symlinks.
 ```
-
-This mode merges existing governance files (append/update managed block), creates missing files, and wires shared assets via symlink.
 
 ## Add A New Skill
 

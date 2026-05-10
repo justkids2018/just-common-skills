@@ -14,64 +14,38 @@
 - 已拉取本仓库到本地，例如：/absolute/path/to/just-common-skills
 - 目标项目目录已存在
 
-## 1. 一键注入（推荐）
+## 1. 一键注入（软引用）
 
-在本仓库根目录执行：
+目的：把公共规则与公共 skills 接入项目，且始终使用软链接（symlink）。
 
-```bash
-cd /absolute/path/to/just-common-skills
-./scripts/bootstrap-project.sh /absolute/path/to/your-project
-```
-
-示例：
+方式 A：在公共仓库目录执行（传目标项目路径）
 
 ```bash
 cd /absolute/path/to/just-common-skills
-./scripts/bootstrap-project.sh /absolute/path/to/my-new-project
+bash ./scripts/inject-current-project.sh /absolute/path/to/your-project --force
 ```
 
-默认是链接模式（link）：后续更新本仓库 skills，会自动反映到目标项目。
-
-## 1.1 在新项目目录直接执行（软引用）
-
-无论新项目还是老项目，都使用同一个脚本。你在项目目录里直接执行：
+方式 B：在目标项目目录执行（调用公共脚本）
 
 ```bash
 cd /absolute/path/to/your-project
 bash /absolute/path/to/just-common-skills/scripts/inject-current-project.sh --force
 ```
 
-说明：
+## 2. 执行结果
 
 - 软链接（软引用）模式：`skills` 与 `common-prompt` 都使用 symlink
 - 有文件就合并追加/更新管理区块（不直接清空原内容）
 - 没有文件就自动创建
-- 目标项目默认是当前目录（`$PWD`）
-- `--force` 兼容旧习惯，当前脚本会自动非交互执行
-- 如需显式指定目标路径：
 
-```bash
-bash /absolute/path/to/just-common-skills/scripts/inject-current-project.sh /absolute/path/to/your-project --force
+AI 指令模板（可复制）：
+
+```text
+先读 /Users/qisd/Documents/development/ai/just-common-skills/README.md。
+然后对当前项目执行软引用接入（不要 copy）：
+bash /Users/qisd/Documents/development/ai/just-common-skills/scripts/inject-current-project.sh --force
+执行后校验 .github/skills 和 .ai/common-prompt 为 symlink。
 ```
-
-## 2. 常用选项
-
-1. 覆盖已存在文件（不交互确认）
-
-```bash
-./scripts/bootstrap-project.sh /absolute/path/to/your-project --force
-```
-
-2. 快照拷贝模式（不使用软链接）
-
-```bash
-./scripts/bootstrap-project.sh /absolute/path/to/your-project --copy
-```
-
-适用场景：
-
-- link：团队统一维护，实时同步
-- copy：项目隔离，需要冻结版本
 
 ## 3. 注入完成后如何验证
 
@@ -122,11 +96,8 @@ rm -rf .ai/common-prompt
 1. 报错 target project not found
 - 目标目录路径写错，先确认目录存在
 
-2. 提示目标已存在并询问替换
-- 加 --force 可直接覆盖
-
-3. 想看脚本参数
+2. 想看脚本参数
 
 ```bash
-./scripts/bootstrap-project.sh --help
+bash /absolute/path/to/just-common-skills/scripts/inject-current-project.sh --help
 ```
