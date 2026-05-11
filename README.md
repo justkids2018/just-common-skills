@@ -8,6 +8,16 @@ This repository is the single source of truth for reusable skills.
 
 Keep all reusable skills in one place so multiple projects can apply them directly.
 
+## System Charter
+
+The platform-level mission, operating model, and review contract are defined here:
+
+- [System.md](System.md)
+
+System platform operation docs are here:
+
+- [docs/system-platform/README.md](docs/system-platform/README.md)
+
 ## Structure
 
 - `skills/`: all reusable skills live here.
