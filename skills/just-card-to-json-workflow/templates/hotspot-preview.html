@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hotspot Preview 1024x1024</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #111933;
+            --text: #e6ecff;
+            --muted: #9fb0e0;
+            --ok: #29cc7a;
+            --warn: #ffb020;
+            --card: #4cc9f0;
+            --object: #f72585;
+            --other: #ffd166;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top left, #1b2550, var(--bg));
+            color: var(--text);
+        }
+
+        .page {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 16px;
+        }
+
+        .panel {
+            background: rgba(17, 25, 51, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin: 0 0 10px;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .row {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        input[type="text"],
+        input[type="file"],
+        textarea,
+        button {
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 8px;
+            background: #0d1530;
+            color: var(--text);
+            padding: 9px 10px;
+            font-size: 13px;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        button {
+            cursor: pointer;
+            background: linear-gradient(135deg, #2f70ff, #33b6ff);
+            border: none;
+            font-weight: 600;
+        }
+
+        button.secondary {
+            background: #19244b;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .checks {
+            margin-top: 12px;
+            display: grid;
+            gap: 7px;
+            font-size: 13px;
+        }
+
+        .score-box {
+            margin-top: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            font-size: 13px;
+        }
+
+        .score-pass {
+            color: var(--ok);
+        }
+
+        .score-fail {
+            color: #ff6b6b;
+        }
+
+        .ok {
+            color: var(--ok);
+        }
+
+        .warn {
+            color: var(--warn);
+        }
+
+        .workspace {
+            display: grid;
+            gap: 10px;
+        }
+
+        .viewer {
+            position: relative;
+            background: rgba(17, 25, 51, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 12px;
+            overflow: auto;
+            min-height: 560px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 12px;
+        }
+
+        .stack {
+            position: relative;
+            width: fit-content;
+            height: fit-content;
+        }
+
+        #sceneImage {
+            max-width: min(100%, 940px);
+            height: auto;
+            display: block;
+            border-radius: 10px;
+        }
+
+        #overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .legend {
+            display: flex;
+            gap: 14px;
+            font-size: 12px;
+            color: var(--muted);
+            align-items: center;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: rgba(17, 25, 51, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 9px;
+            text-align: left;
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .coord {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+        }
+
+        .dropzone {
+            margin-top: 10px;
+            border: 1px dashed rgba(255, 255, 255, 0.28);
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+            transition: all 0.15s ease;
+        }
+
+        .dropzone.active {
+            border-color: #33b6ff;
+            color: #d8f2ff;
+            background: rgba(51, 182, 255, 0.12);
+        }
+
+        .path-hint {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        @media (max-width: 980px) {
+            .page {
+                grid-template-columns: 1fr;
+            }
+
+            #sceneImage {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <section class="panel">
+            <h1>Hotspot 校验页</h1>
+            <div class="muted">
+                用于校验 1024x1024 场景图与 items_data 的重合度。支持新结构（词条 + regions）和旧扁平结构。
+            </div>
+
+            <div class="row">
+                <label>图片文件（推荐）</label>
+                <input id="imageFile" type="file" accept="image/*" />
+
+                <label>JSON 文件（推荐）</label>
+                <input id="jsonFile" type="file" accept="application/json,.json" />
+
+                <label>或图片 URL / 路径</label>
+                <input id="imageUrl" type="text" placeholder="https://.../scene.png 或 /Users/.../scene.png" />
+
+                <label>场景资料根目录（全局默认）</label>
+                <input id="baseRoot" type="text" placeholder="/Users/.../kiki_web/doc/card-generation/scene-info" />
+
+                <label>scene_slug / card_slug</label>
+                <div class="toolbar" style="margin-top:0;">
+                    <input id="sceneSlug" type="text" placeholder="demo_animals" />
+                    <input id="cardSlug" type="text" placeholder="kiki_dongwuyuan" />
+                </div>
+                <label>图片扩展名（默认 jpg）</label>
+                <input id="imageExt" type="text" placeholder="jpg" />
+
+                <label>或 JSON URL / 路径</label>
+                <input id="jsonPath" type="text"
+                    placeholder="kiki_web/doc/card-generation/scene-info/demo_animals/kiki_dongwuyuan/kiki_dongwuyuan.json" />
+                <div class="path-hint">支持相对路径、绝对路径、http(s) 地址。推荐把 JSON 路径固定后重复使用。</div>
+
+                <label>或 JSON 文本粘贴</label>
+                <textarea id="jsonText" placeholder='[{"type":"chinese", ...}]'></textarea>
+            </div>
+
+            <div class="dropzone" id="dropzone">
+                拖拽图片和 JSON 到这里（或拖到整个页面）自动识别加载
+            </div>
+
+            <div class="toolbar">
+                <button id="loadBtn">加载并绘制</button>
+                <button id="clearBtn" class="secondary">清空</button>
+            </div>
+
+            <div class="toolbar">
+                <button id="prefillBtn" class="secondary">一键填充默认 JSON 路径</button>
+                <button id="savePathBtn" class="secondary">记住当前路径</button>
+            </div>
+
+            <div class="toolbar">
+                <button id="applyScenePathBtn" class="secondary">按 scene/card 自动生成路径</button>
+                <button id="fillDemoBtn" class="secondary">填充示例（animals）</button>
+            </div>
+
+            <div class="checks" id="checks"></div>
+            <div class="score-box" id="scoreBox">评分：- / 100（通过线：89）</div>
+            <div class="coord" id="coord">cursor: -, -</div>
+        </section>
+
+        <section class="workspace">
+            <div class="legend">
+                <span><span class="dot" style="background: var(--card)"></span>card</span>
+                <span><span class="dot" style="background: var(--object)"></span>object</span>
+                <span><span class="dot" style="background: var(--other)"></span>other</span>
+            </div>
+
+            <div class="viewer">
+                <div class="stack" id="stack">
+                    <img id="sceneImage" alt="scene" />
+                    <canvas id="overlay"></canvas>
+                </div>
+            </div>
+
+            <table id="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>id</th>
+                        <th>text</th>
+                        <th>region_type</th>
+                        <th>rect</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        const imageEl = document.getElementById('sceneImage');
+        const canvas = document.getElementById('overlay');
+        const checksEl = document.getElementById('checks');
+        const scoreBoxEl = document.getElementById('scoreBox');
+        const tbody = document.querySelector('#table tbody');
+        const coordEl = document.getElementById('coord');
+
+        const imageFileEl = document.getElementById('imageFile');
+        const jsonFileEl = document.getElementById('jsonFile');
+        const imageUrlEl = document.getElementById('imageUrl');
+        const baseRootEl = document.getElementById('baseRoot');
+        const sceneSlugEl = document.getElementById('sceneSlug');
+        const cardSlugEl = document.getElementById('cardSlug');
+        const imageExtEl = document.getElementById('imageExt');
+        const jsonPathEl = document.getElementById('jsonPath');
+        const jsonTextEl = document.getElementById('jsonText');
+        const dropzoneEl = document.getElementById('dropzone');
+
+        const STORAGE_KEYS = {
+            imagePath: 'hotspot.preview.imagePath',
+            jsonPath: 'hotspot.preview.jsonPath',
+            baseRoot: 'hotspot.preview.baseRoot',
+            sceneSlug: 'hotspot.preview.sceneSlug',
+            cardSlug: 'hotspot.preview.cardSlug',
+            imageExt: 'hotspot.preview.imageExt'
+        };
+
+        document.getElementById('loadBtn').addEventListener('click', loadAndDraw);
+        document.getElementById('clearBtn').addEventListener('click', clearAll);
+        document.getElementById('prefillBtn').addEventListener('click', prefillDefaults);
+        document.getElementById('savePathBtn').addEventListener('click', savePaths);
+        document.getElementById('applyScenePathBtn').addEventListener('click', applyScenePath);
+        document.getElementById('fillDemoBtn').addEventListener('click', fillDemo);
+
+        let flatRegions = [];
+
+        function typeColor(type) {
+            if (type === 'card') return getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
+            if (type === 'object') return getComputedStyle(document.documentElement).getPropertyValue('--object').trim();
+            return getComputedStyle(document.documentElement).getPropertyValue('--other').trim();
+        }
+
+        function normalizeRect(coord) {
+            const xs = coord.map(p => p.x);
+            const ys = coord.map(p => p.y);
+            const minX = Math.min(...xs);
+            const maxX = Math.max(...xs);
+            const minY = Math.min(...ys);
+            const maxY = Math.max(...ys);
+            return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
+        }
+
+        function displayIndex(region, fallbackIndex) {
+            if (Number.isInteger(region.index)) return region.index;
+            return fallbackIndex + 1;
+        }
+
+        function flattenItemsData(items) {
+            const out = [];
+            for (const item of items) {
+                if (item && Array.isArray(item.regions)) {
+                    item.regions.forEach((r, i) => {
+                        if (!Array.isArray(r.coordinate)) return;
+                        out.push({
+                            index: item.index,
+                            itemId: item.id,
+                            text: item.text,
+                            regionType: r.region_type || r.region_role || 'card',
+                            coordinate: r.coordinate,
+                            runtimeId: r.id || `${item.id}_${r.region_type || 'card'}_${i + 1}`
+                        });
+                    });
+                } else if (item && Array.isArray(item.coordinate)) {
+                    out.push({
+                        index: item.index,
+                        itemId: item.id,
+                        text: item.text,
+                        regionType: item.region_role || 'card',
+                        coordinate: item.coordinate,
+                        runtimeId: item.id
+                    });
+                }
+            }
+            return out;
+        }
+
+        async function fileToText(file) {
+            return await file.text();
+        }
+
+        function pathToUrl(input) {
+            const p = (input || '').trim();
+            if (!p) return '';
+            if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('file://')) return p;
+            if (p.startsWith('/')) return `file://${p}`;
+            return p;
+        }
+
+        function normalizeRoot(p) {
+            return (p || '').trim().replace(/\/$/, '');
+        }
+
+        function applyScenePath() {
+            const root = normalizeRoot(baseRootEl.value);
+            const scene = (sceneSlugEl.value || '').trim();
+            const card = (cardSlugEl.value || '').trim();
+            const ext = (imageExtEl.value || 'jpg').trim().replace('.', '');
+
+            if (!root || !scene || !card) {
+                showChecks([{ ok: false, msg: '请先填写 baseRoot / scene_slug / card_slug' }]);
+                return;
+            }
+
+            const baseCardDir = `${root}/${scene}/${card}`;
+            imageUrlEl.value = `${baseCardDir}/${card}.${ext}`;
+            jsonPathEl.value = `${baseCardDir}/${card}.json`;
+            savePaths();
+            showChecks([{ ok: true, msg: '已按规范生成图片与 JSON 路径（同名）' }]);
+        }
+
+        function fillDemo() {
+            sceneSlugEl.value = 'demo_animals';
+            cardSlugEl.value = 'kiki_dongwuyuan';
+            imageExtEl.value = 'jpg';
+            applyScenePath();
+        }
+
+        function showChecks(lines) {
+            checksEl.innerHTML = lines.map(l => `<div class="${l.ok ? 'ok' : 'warn'}">${l.ok ? '✓' : '⚠'} ${l.msg}</div>`).join('');
+        }
+
+        function overlapRatio(a, b) {
+            const interW = Math.max(0, Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX));
+            const interH = Math.max(0, Math.min(a.maxY, b.maxY) - Math.max(a.minY, b.minY));
+            const inter = interW * interH;
+            if (inter <= 0) return 0;
+            const areaA = Math.max(1, a.w * a.h);
+            const areaB = Math.max(1, b.w * b.h);
+            return inter / Math.min(areaA, areaB);
+        }
+
+        function renderScore(score, pass) {
+            const cls = pass ? 'score-pass' : 'score-fail';
+            scoreBoxEl.className = `score-box ${cls}`;
+            scoreBoxEl.textContent = `评分：${score} / 100（通过线：89） - ${pass ? 'PASS' : 'FAIL'}`;
+        }
+
+        function validate(imageW, imageH, regions) {
+            const lines = [];
+            lines.push({ ok: imageW === 1024 && imageH === 1024, msg: `图片尺寸 ${imageW}x${imageH}（要求 1024x1024）` });
+            lines.push({ ok: regions.length > 0, msg: `热区数量 ${regions.length}` });
+
+            let outOfBounds = 0;
+            let badPoints = 0;
+            let tinyAreas = 0;
+            const keySet = new Set();
+            let duplicated = 0;
+            let overlaps = 0;
+            const rects = [];
+
+            regions.forEach(r => {
+                const key = `${r.index}-${r.itemId}-${r.regionType}-${JSON.stringify(r.coordinate)}`;
+                if (keySet.has(key)) duplicated += 1;
+                keySet.add(key);
+
+                if (!Array.isArray(r.coordinate) || r.coordinate.length !== 4) {
+                    badPoints += 1;
+                    return;
+                }
+
+                for (const p of r.coordinate) {
+                    if (!Number.isInteger(p.x) || !Number.isInteger(p.y)) badPoints += 1;
+                    if (p.x < 0 || p.x > 1023 || p.y < 0 || p.y > 1023) outOfBounds += 1;
+                }
+
+                const rect = normalizeRect(r.coordinate);
+                const minArea = r.regionType === 'object' ? 36 * 36 : 48 * 48;
+                if (rect.w * rect.h < minArea) tinyAreas += 1;
+                rects.push({ ...rect, regionType: r.regionType, itemId: r.itemId });
+            });
+
+            for (let i = 0; i < rects.length; i += 1) {
+                for (let j = i + 1; j < rects.length; j += 1) {
+                    if (rects[i].itemId && rects[i].itemId === rects[j].itemId) continue;
+                    const ratio = overlapRatio(rects[i], rects[j]);
+                    if (ratio > 0.1) overlaps += 1;
+                }
+            }
+
+            lines.push({ ok: badPoints === 0, msg: `坐标点格式检查（四点、整数）异常 ${badPoints}` });
+            lines.push({ ok: outOfBounds === 0, msg: `越界点数量 ${outOfBounds}` });
+            lines.push({ ok: duplicated === 0, msg: `重复热区数量 ${duplicated}` });
+            lines.push({ ok: tinyAreas === 0, msg: `过小热区数量 ${tinyAreas}（card>=48x48, object>=36x36）` });
+            lines.push({ ok: overlaps === 0, msg: `跨词重叠风险 ${overlaps}（重叠占比 > 10%）` });
+
+            let score = 100;
+            if (!(imageW === 1024 && imageH === 1024)) score -= 30;
+            if (regions.length === 0) score -= 40;
+            score -= Math.min(20, badPoints * 2);
+            score -= Math.min(20, outOfBounds * 2);
+            score -= Math.min(10, duplicated * 2);
+            score -= Math.min(10, tinyAreas * 2);
+            score -= Math.min(10, overlaps * 2);
+            score = Math.max(0, score);
+
+            const pass = score >= 89;
+            lines.unshift({ ok: pass, msg: `评分 ${score}/100，阈值 89（${pass ? '通过' : '不通过'}）` });
+
+            return { lines, score, pass };
+        }
+
+        function renderTable(regions) {
+            tbody.innerHTML = '';
+            regions.forEach((r, idx) => {
+                const rect = normalizeRect(r.coordinate);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${displayIndex(r, idx)}</td>
+          <td>${r.itemId || '-'}</td>
+          <td>${r.text || '-'}</td>
+          <td>${r.regionType}</td>
+          <td>${rect.minX},${rect.minY} → ${rect.maxX},${rect.maxY}</td>
+        `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function drawOverlay() {
+            if (!imageEl.naturalWidth || !imageEl.naturalHeight) return;
+            const cssW = imageEl.clientWidth;
+            const cssH = imageEl.clientHeight;
+
+            canvas.width = cssW;
+            canvas.height = cssH;
+            canvas.style.width = `${cssW}px`;
+            canvas.style.height = `${cssH}px`;
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, cssW, cssH);
+
+            const sx = cssW / imageEl.naturalWidth;
+            const sy = cssH / imageEl.naturalHeight;
+
+            flatRegions.forEach((r, i) => {
+                const rect = normalizeRect(r.coordinate);
+                const x = rect.minX * sx;
+                const y = rect.minY * sy;
+                const w = rect.w * sx;
+                const h = rect.h * sy;
+
+                const color = typeColor(r.regionType);
+
+                ctx.fillStyle = color + '22';
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.fillRect(x, y, w, h);
+                ctx.strokeRect(x, y, w, h);
+
+                ctx.fillStyle = color;
+                ctx.font = '12px sans-serif';
+                ctx.fillText(`${displayIndex(r, i)}:${r.regionType}`, x + 4, Math.max(14, y + 13));
+            });
+        }
+
+        async function loadImage() {
+            if (imageFileEl.files && imageFileEl.files[0]) {
+                const url = URL.createObjectURL(imageFileEl.files[0]);
+                imageEl.src = url;
+                await imageEl.decode();
+                return;
+            }
+
+            const raw = imageUrlEl.value.trim();
+            if (!raw) throw new Error('请提供图片文件或图片 URL/路径');
+            const url = pathToUrl(raw);
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                imageEl.crossOrigin = 'anonymous';
+            }
+            imageEl.src = url;
+            await imageEl.decode();
+        }
+
+        async function loadJson() {
+            let text = '';
+            if (jsonFileEl.files && jsonFileEl.files[0]) {
+                text = await fileToText(jsonFileEl.files[0]);
+            } else if (jsonTextEl.value.trim()) {
+                text = jsonTextEl.value.trim();
+            } else if (jsonPathEl.value.trim()) {
+                const url = pathToUrl(jsonPathEl.value.trim());
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`JSON 路径加载失败: ${resp.status}`);
+                text = await resp.text();
+            }
+
+            if (!text) throw new Error('请提供 JSON 文件、JSON 文本或 JSON 路径');
+            return JSON.parse(text);
+        }
+
+        async function loadAndDraw() {
+            try {
+                await loadImage();
+                const data = await loadJson();
+                if (!Array.isArray(data)) throw new Error('JSON 根节点必须是数组');
+
+                flatRegions = flattenItemsData(data);
+                drawOverlay();
+                renderTable(flatRegions);
+
+                const result = validate(imageEl.naturalWidth, imageEl.naturalHeight, flatRegions);
+                showChecks(result.lines);
+                renderScore(result.score, result.pass);
+                savePaths();
+            } catch (err) {
+                showChecks([{ ok: false, msg: err.message || String(err) }]);
+                renderScore(0, false);
+            }
+        }
+
+        function prefillDefaults() {
+            if (!jsonPathEl.value.trim()) {
+                jsonPathEl.value = 'kiki_web/doc/card-generation/scene-info/demo_animals/kiki_dongwuyuan/kiki_dongwuyuan.json';
+            }
+            showChecks([{ ok: true, msg: '已填充默认 JSON 路径，请补充图片路径或拖拽图片文件' }]);
+        }
+
+        function savePaths() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.imagePath, imageUrlEl.value || '');
+                localStorage.setItem(STORAGE_KEYS.jsonPath, jsonPathEl.value || '');
+                localStorage.setItem(STORAGE_KEYS.baseRoot, baseRootEl.value || '');
+                localStorage.setItem(STORAGE_KEYS.sceneSlug, sceneSlugEl.value || '');
+                localStorage.setItem(STORAGE_KEYS.cardSlug, cardSlugEl.value || '');
+                localStorage.setItem(STORAGE_KEYS.imageExt, imageExtEl.value || '');
+            } catch (e) {
+                // ignore storage failures in restricted environments
+            }
+        }
+
+        function restorePaths() {
+            try {
+                const img = localStorage.getItem(STORAGE_KEYS.imagePath) || '';
+                const json = localStorage.getItem(STORAGE_KEYS.jsonPath) || '';
+                const root = localStorage.getItem(STORAGE_KEYS.baseRoot) || '';
+                const scene = localStorage.getItem(STORAGE_KEYS.sceneSlug) || '';
+                const card = localStorage.getItem(STORAGE_KEYS.cardSlug) || '';
+                const ext = localStorage.getItem(STORAGE_KEYS.imageExt) || '';
+                if (img) imageUrlEl.value = img;
+                if (json) jsonPathEl.value = json;
+                if (root) baseRootEl.value = root;
+                if (scene) sceneSlugEl.value = scene;
+                if (card) cardSlugEl.value = card;
+                if (ext) imageExtEl.value = ext;
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        function applyDroppedFiles(files) {
+            let imageFound = false;
+            let jsonFound = false;
+
+            for (const file of files) {
+                if (!imageFound && file.type.startsWith('image/')) {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    imageFileEl.files = dt.files;
+                    imageFound = true;
+                    continue;
+                }
+
+                const lowerName = file.name.toLowerCase();
+                if (!jsonFound && (file.type === 'application/json' || lowerName.endsWith('.json'))) {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    jsonFileEl.files = dt.files;
+                    jsonFound = true;
+                }
+            }
+
+            if (imageFound || jsonFound) {
+                showChecks([{ ok: true, msg: `已识别拖拽文件：图片 ${imageFound ? '✓' : '×'} / JSON ${jsonFound ? '✓' : '×'}` }]);
+            }
+        }
+
+        function clearAll() {
+            imageEl.removeAttribute('src');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            flatRegions = [];
+            tbody.innerHTML = '';
+            checksEl.innerHTML = '';
+            scoreBoxEl.className = 'score-box';
+            scoreBoxEl.textContent = '评分：- / 100（通过线：89）';
+            coordEl.textContent = 'cursor: -, -';
+            imageFileEl.value = '';
+            jsonFileEl.value = '';
+            imageUrlEl.value = '';
+            baseRootEl.value = '';
+            sceneSlugEl.value = '';
+            cardSlugEl.value = '';
+            imageExtEl.value = '';
+            jsonPathEl.value = '';
+            jsonTextEl.value = '';
+        }
+
+        ['dragenter', 'dragover'].forEach(evt => {
+            window.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropzoneEl.classList.add('active');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+            window.addEventListener(evt, (e) => {
+                e.preventDefault();
+                if (evt === 'drop') {
+                    applyDroppedFiles(e.dataTransfer.files || []);
+                }
+                dropzoneEl.classList.remove('active');
+            });
+        });
+
+        document.getElementById('stack').addEventListener('mousemove', (e) => {
+            if (!imageEl.naturalWidth || !imageEl.clientWidth) return;
+            const rect = imageEl.getBoundingClientRect();
+            const x = Math.round((e.clientX - rect.left) * (imageEl.naturalWidth / imageEl.clientWidth));
+            const y = Math.round((e.clientY - rect.top) * (imageEl.naturalHeight / imageEl.clientHeight));
+            coordEl.textContent = `cursor: ${x}, ${y}`;
+        });
+
+        window.addEventListener('resize', () => {
+            if (flatRegions.length) drawOverlay();
+        });
+
+        restorePaths();
+        if (!baseRootEl.value.trim()) {
+            baseRootEl.value = '/Users/qisd/Documents/development/my_project/kiki_chain/kiki_web/doc/card-generation/scene-info';
+        }
+        if (!sceneSlugEl.value.trim()) sceneSlugEl.value = 'demo_animals';
+        if (!cardSlugEl.value.trim()) cardSlugEl.value = 'kiki_dongwuyuan';
+        if (!imageExtEl.value.trim()) imageExtEl.value = 'jpg';
+    </script>
+</body>
+
+</html>

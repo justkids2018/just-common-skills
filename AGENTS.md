@@ -28,7 +28,7 @@ Examples:
 
 - Default baseline lives in this repo and is shared by all runtimes.
 - Canonical baseline entry: `common-prompt/baseline/README.md`.
-- Operational baseline docs: `common-prompt/baseline/01-design-principles.md` to `common-prompt/baseline/05-git-workflow.md`.
+- Operational baseline docs: `common-prompt/baseline/01-design-principles.md` to `common-prompt/baseline/06-skill-workflow-standards.md`.
 
 ## Copilot Compatibility
 
@@ -38,7 +38,23 @@ Examples:
 - Skill assets should be exposed through `.github/skills/` in each target project.
 - `.claude/skills/` can be kept as a compatibility alias to `.github/skills/`.
 - Shared baseline assets should be exposed through `.ai/common-prompt/` in each target project.
-- `.ai/common/` can be kept as a compatibility alias to `.ai/common-prompt/`.
+
+## Agent Behavior Rules
+
+These rules govern HOW the agent works, not what the code should look like.
+
+1. **Think before coding.** State assumptions explicitly. If uncertain, ask rather than guess.
+2. **Simplicity first.** Minimum code that solves the problem. No speculative features.
+3. **Surgical changes.** Touch only what you must. Don't "improve" adjacent code.
+4. **Goal-driven execution.** Define success criteria. Loop until verified.
+5. **Model only for judgment.** Use AI for classification/drafting/summarization. Routing, retries, deterministic transforms → plain code.
+6. **Token budget awareness.** If a task is spiraling, summarize progress and start fresh. Surface the issue, don't silently overrun.
+7. **Surface conflicts, don't average.** If two codebase patterns contradict, pick one (more recent/tested), explain why, flag the other.
+8. **Read before write.** Before adding code, read exports, callers, shared utilities. "Looks orthogonal" is dangerous.
+9. **Tests verify intent.** A test that can't fail when business logic changes is worthless.
+10. **Checkpoint after significant steps.** Summarize what's done, what's verified, what's left. If lost, stop and restate.
+11. **Match codebase conventions.** Conformance > taste. Disagree? Surface it, don't fork silently.
+12. **Fail loud.** "Completed" is wrong if anything was skipped. Default to surfacing uncertainty.
 
 ## Skill Trigger Routing Standard
 

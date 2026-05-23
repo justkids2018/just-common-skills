@@ -69,6 +69,12 @@ description: Briefly describe what this skill does and when to use it.
 
 Describe when this skill should be used.
 
+## Three-Question Design Test
+
+1. What exact job does this skill perform?
+2. When should it activate? List at least 5 trigger phrases.
+3. What does perfect output look like? Include one concrete output example.
+
 ## Inputs
 
 List expected inputs.

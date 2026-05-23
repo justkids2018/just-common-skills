@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${DEPLOY_DATABASE_USER}
+      POSTGRES_PASSWORD: ${DEPLOY_DATABASE_PASSWORD}
+      POSTGRES_DB: ${DEPLOY_DATABASE_NAME}
+      TZ: Asia/Shanghai
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=512MB"
+      - "-c"
+      - "max_connections=100"
+    volumes:
+      - app_pgdata:/var/lib/postgresql/data
+      # 如需初始化 SQL，取消注释并放置 sql 文件：
+      # - ./db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    ports:
+      - "127.0.0.1:${DEPLOY_POSTGRES_HOST_PORT}:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DEPLOY_DATABASE_USER} -d ${DEPLOY_DATABASE_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${DEPLOY_BACKEND_IMAGE}
+    pull_policy: always
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql://${DEPLOY_DATABASE_USER}:${DEPLOY_DATABASE_PASSWORD}@postgres:5432/${DEPLOY_DATABASE_NAME}
+      JWT_SECRET: ${DEPLOY_JWT_SECRET}
+      LOG_LEVEL: ${DEPLOY_LOG_LEVEL}
+      TZ: Asia/Shanghai
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${DEPLOY_BACKEND_HOST_PORT}:8001"
+    healthcheck:
+      test: [ "CMD-SHELL", "timeout 5 sh -c 'cat < /dev/null > /dev/tcp/127.0.0.1/8001' || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  admin:
+    image: ${DEPLOY_ADMIN_IMAGE}
+    pull_policy: always
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:${DEPLOY_ADMIN_HOST_PORT}:80"
+
+volumes:
+  app_pgdata:
+    driver: local

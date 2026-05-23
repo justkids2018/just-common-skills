@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<!--
+  Just · 小红书卡片模板
+  ==========================================
+  这是固定的样式参考。每次生成文章卡片时，
+  Claude 保持所有 CSS 不变，只替换占位内容。
+
+  占位说明：
+  - {{COVER_TITLE}}      封面大标题（≤15字）
+  - {{COVER_SUBTITLE}}   封面副标题（分类/期数，如"公司研究 · 2025"）
+  - {{SECTION_N}}        第 N 段正文内容
+  - {{TOTAL}}            总卡片数
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Just · 小红书卡片</title>
+
+<!-- 霞鹜文楷：温暖有文气的免费中文字体 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.1.0/style.css">
+
+<style>
+  /* ── 基础重置 ─────────────────────────────── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #e8e6e1;
+    font-family: 'LXGW WenKai Screen', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+    padding: 32px 0 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  /* ── 卡片通用 ─────────────────────────────── */
+  .card-page {
+    width: 390px;
+    min-height: 520px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── 封面卡（Card 1）── 暖灰底，大标题 ──── */
+  .card-cover {
+    background: #EBEBEB;
+    padding: 48px 36px 40px;
+    justify-content: space-between;
+    min-height: 520px;
+  }
+
+  .cover-brand {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: #888;
+    text-transform: uppercase;
+  }
+
+  .cover-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+    padding: 32px 0;
+  }
+
+  .cover-rule {
+    width: 32px;
+    height: 2px;
+    background: #1C1C1E;
+  }
+
+  .cover-title {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #1C1C1E;
+    letter-spacing: -0.01em;
+  }
+
+  .cover-subtitle {
+    font-size: 12px;
+    color: #888;
+    letter-spacing: 0.08em;
+    font-weight: 400;
+  }
+
+  .cover-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .cover-tag {
+    font-size: 11px;
+    color: #888;
+    border: 1px solid #ccc;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── 内容卡（Card 2+）── 暖白底，正文 ──── */
+  .card-content {
+    background: #FFFCF8;
+    padding: 36px 28px 28px;
+    justify-content: space-between;
+    min-height: 520px;
+  }
+
+  .content-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .content-text {
+    font-size: 15px;
+    line-height: 1.9;
+    color: #1C1C1E;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    flex: 1;
+  }
+
+  /* 段落小标题（如果内容需要分点）*/
+  .content-text strong {
+    font-weight: 700;
+    color: #1C1C1E;
+  }
+
+  .content-footer {
+    margin-top: 28px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-brand {
+    font-size: 11px;
+    font-weight: 700;
+    color: #AAAAAA;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .footer-page {
+    font-size: 11px;
+    color: #BBBBBB;
+    font-weight: 500;
+  }
+
+  /* ── 预览工具栏（截图时不显示）── */
+  @media screen {
+    .toolbar {
+      width: 390px;
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 12px;
+      color: #555;
+      border: 1px dashed #ccc;
+      text-align: center;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── 预览说明（截图时不包含）── -->
+<div class="toolbar">
+  Just 卡片模板 · 截图时选择 .card-page 元素
+</div>
+
+
+<!-- ════════════════════════════════════════
+     封面卡 (c1) — 替换 COVER_TITLE 和 COVER_SUBTITLE
+     ════════════════════════════════════════ -->
+<div class="card-page card-cover" id="c1">
+
+  <div class="cover-brand">Just</div>
+
+  <div class="cover-body">
+    <div class="cover-rule"></div>
+    <div class="cover-title">{{COVER_TITLE}}</div>
+    <div class="cover-subtitle">{{COVER_SUBTITLE}}</div>
+  </div>
+
+  <div class="cover-footer">
+    <span class="cover-tag">投资研究</span>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     内容卡 (c2) — 替换 SECTION_1，共 TOTAL 张
+     ════════════════════════════════════════ -->
+<div class="card-page card-content" id="c2">
+
+  <div class="content-body">
+    <div class="content-text">
+      {{SECTION_1}}
+    </div>
+  </div>
+
+  <div class="content-footer">
+    <span class="footer-brand">Just</span>
+    <span class="footer-page">2 / {{TOTAL}}</span>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     内容卡 (c3) — 如有第二段正文
+     ════════════════════════════════════════ -->
+<div class="card-page card-content" id="c3">
+
+  <div class="content-body">
+    <div class="content-text">
+      {{SECTION_2}}
+    </div>
+  </div>
+
+  <div class="content-footer">
+    <span class="footer-brand">Just</span>
+    <span class="footer-page">3 / {{TOTAL}}</span>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════
+     如需更多内容卡，按上面格式继续添加
+     id 依次为 c4、c5... 页码同步更新
+     ════════════════════════════════════════ -->
+
+</body>
+</html>

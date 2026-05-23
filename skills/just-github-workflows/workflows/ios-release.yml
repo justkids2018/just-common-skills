@@ -1,0 +1,234 @@
+# ============================================================
+# iOS Release Build — IPA 签名打包（需要 macOS runner）
+#
+# ⚙️ 必改项（搜索 ADAPT）：
+#   1. working-directory  → Flutter 子目录
+#   2. IPA artifact path  → YOUR_FLUTTER_DIR/build/...
+#
+# ⚙️ 必设 Repo Variables：
+#   IOS_BASE_VERSION      e.g. 1.0.0
+#   IOS_EXPORT_METHOD     app-store | ad-hoc | enterprise | development
+#
+# ⚙️ 必设 Repo Secrets：
+#   IOS_CERTIFICATE_P12_BASE64         base64 < cert.p12 | tr -d '\n'
+#   IOS_CERTIFICATE_PASSWORD           P12 密码
+#   IOS_PROVISIONING_PROFILE_BASE64    base64 < profile.mobileprovision | tr -d '\n'
+#   IOS_KEYCHAIN_PASSWORD              (可选，不填自动生成)
+# ============================================================
+name: iOS Release Build
+
+on:
+  schedule:
+    # 一三五 08:30 上海时间 (UTC 00:30)，按需修改
+    - cron: "30 0 * * 1,3,5"
+  workflow_dispatch:
+    inputs:
+      base_version:
+        description: "Base version (first 3 parts), e.g. 1.0.0"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-ios-release:
+    runs-on: macos-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+
+    env:
+      BASE_VERSION_DEFAULT: ${{ vars.IOS_BASE_VERSION || '1.0.0' }}
+      IOS_EXPORT_METHOD:    ${{ vars.IOS_EXPORT_METHOD || 'app-store' }}
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute build metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          INPUT_BASE_VERSION="${{ github.event.inputs.base_version || '' }}"
+          if [[ -n "${INPUT_BASE_VERSION}" ]]; then
+            BASE_VERSION="${INPUT_BASE_VERSION}"
+          else
+            BASE_VERSION="${BASE_VERSION_DEFAULT}"
+          fi
+          BUILD_NUM_DEC="${{ github.run_number }}"
+          BUILD_SEQ=$(printf "%03d" "${BUILD_NUM_DEC}")
+          FULL_VERSION="${BASE_VERSION}.${BUILD_SEQ}"
+          BRANCH_NAME="${GITHUB_REF_NAME}"
+          BRANCH_SAFE=$(echo "${BRANCH_NAME}" | sed 's#[^A-Za-z0-9._/-]#-#g')
+          TAG_NAME="ios/${BRANCH_SAFE}/v${FULL_VERSION}"
+          ARTIFACT_PREFIX="ios-${BASE_VERSION}-${BUILD_SEQ}"
+          echo "base_version=${BASE_VERSION}"       >> "$GITHUB_OUTPUT"
+          echo "full_version=${FULL_VERSION}"       >> "$GITHUB_OUTPUT"
+          echo "build_num_dec=${BUILD_NUM_DEC}"     >> "$GITHUB_OUTPUT"
+          echo "build_seq=${BUILD_SEQ}"             >> "$GITHUB_OUTPUT"
+          echo "branch_name=${BRANCH_NAME}"         >> "$GITHUB_OUTPUT"
+          echo "tag_name=${TAG_NAME}"               >> "$GITHUB_OUTPUT"
+          echo "artifact_prefix=${ARTIFACT_PREFIX}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        working-directory: YOUR_FLUTTER_DIR   # ⚙️ ADAPT
+        run: flutter pub get
+
+      - name: Prepare iOS signing assets
+        env:
+          IOS_CERTIFICATE_P12_BASE64:       ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD:         ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64:  ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_KEYCHAIN_PASSWORD:            ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          decode_base64() {
+            if base64 --help >/dev/null 2>&1; then
+              base64 --decode
+            else
+              base64 -D
+            fi
+          }
+
+          if [[ -z "${IOS_CERTIFICATE_P12_BASE64}" || -z "${IOS_CERTIFICATE_PASSWORD}" \
+             || -z "${IOS_PROVISIONING_PROFILE_BASE64}" ]]; then
+            echo "Missing required iOS signing secrets."
+            echo "Please set: IOS_CERTIFICATE_P12_BASE64, IOS_CERTIFICATE_PASSWORD, IOS_PROVISIONING_PROFILE_BASE64"
+            echo "Optional: IOS_KEYCHAIN_PASSWORD"
+            exit 1
+          fi
+
+          if [[ -z "${IOS_KEYCHAIN_PASSWORD}" ]]; then
+            IOS_KEYCHAIN_PASSWORD=$(openssl rand -base64 24)
+          fi
+
+          CERT_PATH="$RUNNER_TEMP/signing_certificate.p12"
+          PROFILE_PATH="$RUNNER_TEMP/signing_profile.mobileprovision"
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+
+          echo "${IOS_CERTIFICATE_P12_BASE64}" | decode_base64 > "${CERT_PATH}"
+          echo "${IOS_PROVISIONING_PROFILE_BASE64}" | decode_base64 > "${PROFILE_PATH}"
+
+          security create-keychain -p "${IOS_KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+          security set-keychain-settings -lut 21600 "${KEYCHAIN_PATH}"
+          security unlock-keychain -p "${IOS_KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+          security list-keychains -d user -s "${KEYCHAIN_PATH}" login.keychain-db
+          security import "${CERT_PATH}" -P "${IOS_CERTIFICATE_PASSWORD}" -A -t cert -f pkcs12 -k "${KEYCHAIN_PATH}"
+          security set-key-partition-list -S apple-tool:,apple: -k "${IOS_KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' /dev/stdin <<< \
+            "$(security cms -D -i "${PROFILE_PATH}")")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< \
+            "$(security cms -D -i "${PROFILE_PATH}")")
+          APP_IDENTIFIER=$(/usr/libexec/PlistBuddy -c 'Print Entitlements:application-identifier' /dev/stdin <<< \
+            "$(security cms -D -i "${PROFILE_PATH}")")
+
+          cp "${PROFILE_PATH}" "$HOME/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.mobileprovision"
+
+          # Bundle ID 从 Profile 自动提取，无需手动填写
+          BUNDLE_ID="${APP_IDENTIFIER#*.}"
+
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>${IOS_EXPORT_METHOD}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key>
+              <string>${PROFILE_NAME}</string>
+            </dict>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>compileBitcode</key>
+            <false/>
+            <key>destination</key>
+            <string>export</string>
+          </dict>
+          </plist>
+          EOF
+
+          {
+            echo "PROFILE_UUID=${PROFILE_UUID}"
+            echo "PROFILE_NAME=${PROFILE_NAME}"
+            echo "BUNDLE_ID=${BUNDLE_ID}"
+            echo "KEYCHAIN_PATH=${KEYCHAIN_PATH}"
+          } >> "$GITHUB_ENV"
+
+      - name: Build iOS IPA (release)
+        working-directory: YOUR_FLUTTER_DIR   # ⚙️ ADAPT
+        run: |
+          set -euo pipefail
+          flutter build ipa --release \
+            --build-name "${{ steps.meta.outputs.full_version }}" \
+            --build-number "${{ steps.meta.outputs.build_num_dec }}" \
+            --export-options-plist "$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Create and push build tag
+        run: |
+          set -euo pipefail
+          TAG_NAME="${{ steps.meta.outputs.tag_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG_NAME}" -m "iOS release ${{ steps.meta.outputs.full_version }}"
+          git push origin "${TAG_NAME}"
+
+      - name: Generate build summary
+        run: |
+          cat > build-summary.md <<EOF
+          # iOS Build Summary
+          - Bundle ID: ${BUNDLE_ID}
+          - Profile: ${PROFILE_NAME}
+          - Export Method: ${IOS_EXPORT_METHOD}
+          - Full version: ${{ steps.meta.outputs.full_version }}
+          - Build number: ${{ steps.meta.outputs.build_num_dec }}
+          - Branch: ${{ steps.meta.outputs.branch_name }}
+          - Tag: ${{ steps.meta.outputs.tag_name }}
+          EOF
+          git log --oneline -n 15 >> build-summary.md
+          cat build-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.artifact_prefix }}-ipa
+          # ⚙️ ADAPT: YOUR_FLUTTER_DIR/build/ios/ipa/*.ipa
+          path: YOUR_FLUTTER_DIR/build/ios/ipa/*.ipa
+          if-no-files-found: error
+
+      - name: Upload build summary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.artifact_prefix }}-summary
+          path: build-summary.md
+          if-no-files-found: error
+
+      - name: Cleanup signing assets
+        if: always()
+        run: |
+          security delete-keychain "${KEYCHAIN_PATH}" 2>/dev/null || true

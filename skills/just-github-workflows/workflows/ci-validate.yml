@@ -1,0 +1,54 @@
+# ============================================================
+# CI 校验 — flutter analyze（每次 push / PR 自动触发）
+#
+# ⚙️ 必改项：
+#   1. branches 列表 → 改为你的保护分支名
+#   2. working-directory → 改为你的 Flutter 子目录
+# ============================================================
+name: CI Validate
+
+on:
+  push:
+    branches:
+      - main          # ⚙️ ADAPT: 改为你的主分支名
+  pull_request:
+
+jobs:
+  validate-flutter:
+    runs-on: ubuntu-latest
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        working-directory: YOUR_FLUTTER_DIR   # ⚙️ ADAPT: e.g. my_app
+        run: flutter pub get
+
+      - name: Flutter analyze
+        working-directory: YOUR_FLUTTER_DIR   # ⚙️ ADAPT: e.g. my_app
+        run: flutter analyze
+
+      # 如需启用单元测试，取消注释：
+      # - name: Flutter test
+      #   working-directory: YOUR_FLUTTER_DIR
+      #   run: flutter test

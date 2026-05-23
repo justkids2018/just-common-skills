@@ -1,0 +1,179 @@
+# ============================================================
+# Android Release Build — APK + AAB 签名打包
+#
+# ⚙️ 必改项（搜索 ADAPT）：
+#   1. working-directory      → Flutter 子目录
+#   2. Keystore 解码路径      → YOUR_FLUTTER_DIR/ci_release.jks
+#   3. key.properties 路径   → YOUR_FLUTTER_DIR/android/key.properties
+#   4. APK artifact path     → YOUR_FLUTTER_DIR/build/...
+#   5. AAB artifact path     → YOUR_FLUTTER_DIR/build/...
+#
+# ⚙️ 必设 Repo Variables：
+#   ANDROID_BASE_VERSION     e.g. 1.0.0
+#
+# ⚙️ 必设 Repo Secrets：
+#   ANDROID_KEYSTORE_BASE64  base64 < your.jks | tr -d '\n'
+#   ANDROID_STORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+# ============================================================
+name: Android Release Build
+
+on:
+  schedule:
+    # 一三五 08:00 上海时间 (UTC 00:00)，按需修改
+    - cron: "0 0 * * 1,3,5"
+  workflow_dispatch:
+    inputs:
+      base_version:
+        description: "Base version (first 3 parts), e.g. 1.0.0"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+
+    env:
+      BASE_VERSION_DEFAULT: ${{ vars.ANDROID_BASE_VERSION || '1.0.0' }}
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute build metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          INPUT_BASE_VERSION="${{ github.event.inputs.base_version || '' }}"
+          if [[ -n "${INPUT_BASE_VERSION}" ]]; then
+            BASE_VERSION="${INPUT_BASE_VERSION}"
+          else
+            BASE_VERSION="${BASE_VERSION_DEFAULT}"
+          fi
+          BUILD_NUM_DEC="${{ github.run_number }}"
+          BUILD_SEQ=$(printf "%03d" "${BUILD_NUM_DEC}")
+          FULL_VERSION="${BASE_VERSION}.${BUILD_SEQ}"
+          BRANCH_NAME="${GITHUB_REF_NAME}"
+          BRANCH_SAFE=$(echo "${BRANCH_NAME}" | sed 's#[^A-Za-z0-9._/-]#-#g')
+          TAG_NAME="android/${BRANCH_SAFE}/v${FULL_VERSION}"
+          ARTIFACT_PREFIX="android-${BASE_VERSION}-${BUILD_SEQ}"
+          echo "base_version=${BASE_VERSION}"     >> "$GITHUB_OUTPUT"
+          echo "full_version=${FULL_VERSION}"     >> "$GITHUB_OUTPUT"
+          echo "build_num_dec=${BUILD_NUM_DEC}"   >> "$GITHUB_OUTPUT"
+          echo "build_seq=${BUILD_SEQ}"           >> "$GITHUB_OUTPUT"
+          echo "branch_name=${BRANCH_NAME}"       >> "$GITHUB_OUTPUT"
+          echo "tag_name=${TAG_NAME}"             >> "$GITHUB_OUTPUT"
+          echo "artifact_prefix=${ARTIFACT_PREFIX}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        working-directory: YOUR_FLUTTER_DIR   # ⚙️ ADAPT
+        run: flutter pub get
+
+      - name: Prepare Android signing files
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD:  ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS:       ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD:    ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${ANDROID_KEYSTORE_BASE64}" || -z "${ANDROID_STORE_PASSWORD}" \
+             || -z "${ANDROID_KEY_ALIAS}" || -z "${ANDROID_KEY_PASSWORD}" ]]; then
+            echo "Missing required Android signing secrets."
+            echo "Please set: ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD"
+            exit 1
+          fi
+          # ⚙️ ADAPT: YOUR_FLUTTER_DIR/ci_release.jks
+          echo "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > YOUR_FLUTTER_DIR/ci_release.jks
+          # ⚙️ ADAPT: YOUR_FLUTTER_DIR/android/key.properties
+          cat > YOUR_FLUTTER_DIR/android/key.properties <<EOF
+          storePassword=${ANDROID_STORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=../ci_release.jks
+          EOF
+
+      - name: Build Android APK (release)
+        working-directory: YOUR_FLUTTER_DIR   # ⚙️ ADAPT
+        run: |
+          flutter build apk --release \
+            --build-name "${{ steps.meta.outputs.full_version }}" \
+            --build-number "${{ steps.meta.outputs.build_num_dec }}"
+
+      - name: Build Android App Bundle (release)
+        working-directory: YOUR_FLUTTER_DIR   # ⚙️ ADAPT
+        run: |
+          flutter build appbundle --release \
+            --build-name "${{ steps.meta.outputs.full_version }}" \
+            --build-number "${{ steps.meta.outputs.build_num_dec }}"
+
+      - name: Create and push build tag
+        run: |
+          set -euo pipefail
+          TAG_NAME="${{ steps.meta.outputs.tag_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG_NAME}" -m "Android release ${{ steps.meta.outputs.full_version }}"
+          git push origin "${TAG_NAME}"
+
+      - name: Generate build summary
+        run: |
+          cat > build-summary.md <<EOF
+          # Android Build Summary
+          - Base version: ${{ steps.meta.outputs.base_version }}
+          - Build sequence: ${{ steps.meta.outputs.build_seq }}
+          - Full version (X.Y.Z.AUTO): ${{ steps.meta.outputs.full_version }}
+          - Android versionCode: ${{ steps.meta.outputs.build_num_dec }}
+          - Branch: ${{ steps.meta.outputs.branch_name }}
+          - Tag: ${{ steps.meta.outputs.tag_name }}
+          - Trigger: ${{ github.event_name }}
+          EOF
+          git log --oneline -n 15 >> build-summary.md
+          cat build-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.artifact_prefix }}-apk
+          # ⚙️ ADAPT: YOUR_FLUTTER_DIR/build/...
+          path: YOUR_FLUTTER_DIR/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.artifact_prefix }}-aab
+          # ⚙️ ADAPT: YOUR_FLUTTER_DIR/build/...
+          path: YOUR_FLUTTER_DIR/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload build summary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.artifact_prefix }}-summary
+          path: build-summary.md
+          if-no-files-found: error

@@ -1,0 +1,53 @@
+{
+    "type": "chinese",
+    "id": "chinese_01",
+    "index": 1,
+    "text": "示例词",
+    "text_pinyin": "shì lì cí",
+    "text_english": "Sample",
+    "text_phonetic": "/ˈsæmpəl/",
+    "regions": [
+        {
+            "region_type": "card",
+            "coordinate": [
+                {
+                    "x": 100,
+                    "y": 100
+                },
+                {
+                    "x": 220,
+                    "y": 100
+                },
+                {
+                    "x": 100,
+                    "y": 220
+                },
+                {
+                    "x": 220,
+                    "y": 220
+                }
+            ]
+        },
+        {
+            "region_type": "object",
+            "coordinate": [
+                {
+                    "x": 260,
+                    "y": 260
+                },
+                {
+                    "x": 380,
+                    "y": 260
+                },
+                {
+                    "x": 260,
+                    "y": 380
+                },
+                {
+                    "x": 380,
+                    "y": 380
+                }
+            ]
+        }
+    ]
+}

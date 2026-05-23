@@ -1,0 +1,10 @@
+services:
+  xiaohongshu-mcp:
+    image: xpzouying/xiaohongshu-mcp
+    platform: linux/amd64   # Apple Silicon 需要通过 Rosetta 模拟 x86_64
+    ports:
+      - "18060:18060"
+    volumes:
+      - ./data:/data        # 存储登录 cookies
+      - ./images:/images    # 发布用的图片目录
+    restart: unless-stopped

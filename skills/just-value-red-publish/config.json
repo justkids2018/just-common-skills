@@ -1,0 +1,9 @@
+{
+  "output": {
+    "earnings": "Just学投资/{company}研究",
+    "industry": "Just学投资/{company}研究",
+    "business": "Just学投资/{company}研究",
+    "full_research": "个股研究/{company}"
+  },
+  "publisher_path": ".claude/skills/just-value-red-publish/publisher"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "xhs-publisher",
+  "version": "2.1.77",
+  "description": "小红书自动发布工具 — 将本地卡片图片发布到小红书",
+  "type": "module",
+  "scripts": {
+    "login": "node publish.js --login",
+    "check": "node publish.js --check",
+    "render": "node publish.js --render-only",
+    "publish": "node publish.js",
+    "publish:scheduled": "node publish.js --scheduled",
+    "publish:article": "node publish.js --article",
+    "publish:article:scheduled": "node publish.js --article --scheduled",
+    "auto-publish": "node auto-publish.js",
+    "agent": "node agent.js",
+    "start-mcp": "./xiaohongshu-mcp",
+    "stop-mcp": "pkill -f xiaohongshu-mcp || true",
+    "logs-mcp": "echo 'native binary logs to stdout, run: npm run start-mcp'"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "puppeteer": "^22.0.0",
+    "jsdom": "^24.0.0"
+  }
+}

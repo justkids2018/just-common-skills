@@ -1,0 +1,210 @@
+# ============================================================
+# Docker Build + Auto Deploy — 构建镜像推 GHCR 并 SSH 部署
+#
+# ⚙️ 必改项（搜索 ADAPT）：
+#   1. IMAGE_BACKEND  → ghcr.io/YOUR_ORG/YOUR_PROJECT-backend
+#   2. IMAGE_ADMIN    → ghcr.io/YOUR_ORG/YOUR_PROJECT-admin
+#   3. backend context/file  → ./YOUR_BACKEND_DIR
+#   4. admin context/file    → ./YOUR_ADMIN_DIR
+#   5. VITE_API_BASE_URL     → 你的后端 API 域名
+#   6. Deployment summary URLs → 你的 Admin / API 域名
+#
+# ⚙️ 必设 Repo Secrets：
+#   TENCENT_SSH_PRIVATE_KEY   服务器 SSH 私钥（不含密码）
+#   DEPLOY_SERVER_IP          服务器公网 IP
+#   DEPLOY_SSH_USER           SSH 登录用户名（通常 ubuntu / root）
+#   DEPLOY_REMOTE_DIR         远程项目目录（e.g. /data/myapp）
+#   GHCR_USERNAME             (可选) 私有镜像时 GHCR 用户名
+#   GHCR_READ_TOKEN           (可选) 私有镜像时 GHCR read token
+# ============================================================
+name: Docker Build and Deploy
+
+on:
+  push:
+    branches:
+      - main            # ⚙️ ADAPT: 改为你的发布分支
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag override (default: sha-<commit>)"
+        required: false
+        type: string
+      skip_db_migration:
+        description: "Skip database migration (only update app)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/YOUR_ORG/YOUR_PROJECT-backend  # ⚙️ ADAPT
+  IMAGE_ADMIN:   ghcr.io/YOUR_ORG/YOUR_PROJECT-admin    # ⚙️ ADAPT
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Job 1: 构建并推送镜像
+  # ──────────────────────────────────────────────────────────
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.resolve_tag.outputs.image_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: resolve_tag
+        shell: bash
+        run: |
+          if [[ -n "${{ github.event.inputs.image_tag }}" ]]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          else
+            TAG="sha-${GITHUB_SHA::8}"
+          fi
+          echo "IMAGE_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "image_tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./YOUR_BACKEND_DIR    # ⚙️ ADAPT: e.g. ./server
+          file:    ./YOUR_BACKEND_DIR/Dockerfile  # ⚙️ ADAPT
+          push: true
+          tags: |
+            ${{ env.IMAGE_BACKEND }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_BACKEND }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_BACKEND }}:latest
+          cache-to:   type=inline
+
+      - name: Build and push admin
+        uses: docker/build-push-action@v6
+        with:
+          context: ./YOUR_ADMIN_DIR      # ⚙️ ADAPT: e.g. ./admin
+          file:    ./YOUR_ADMIN_DIR/Dockerfile    # ⚙️ ADAPT
+          push: true
+          build-args: |
+            VITE_API_BASE_URL=https://YOUR_API_DOMAIN  # ⚙️ ADAPT
+          tags: |
+            ${{ env.IMAGE_ADMIN }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_ADMIN }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_ADMIN }}:latest
+          cache-to:   type=inline
+
+      - name: Build summary
+        run: |
+          echo "### Docker Images Built"  >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Image | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | \`${{ env.IMAGE_BACKEND }}\` | \`${{ env.IMAGE_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Admin   | \`${{ env.IMAGE_ADMIN }}\`   | \`${{ env.IMAGE_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ──────────────────────────────────────────────────────────
+  # Job 2: SSH 部署到目标服务器
+  # ──────────────────────────────────────────────────────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: ${{ github.event_name != 'pull_request' }}
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate deploy secrets
+        env:
+          TENCENT_SSH_PRIVATE_KEY: ${{ secrets.TENCENT_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${TENCENT_SSH_PRIVATE_KEY}" ]]; then
+            echo "Missing required secret: TENCENT_SSH_PRIVATE_KEY"
+            exit 1
+          fi
+
+      - name: Setup SSH
+        env:
+          TENCENT_SSH_PRIVATE_KEY: ${{ secrets.TENCENT_SSH_PRIVATE_KEY }}
+          DEPLOY_SERVER_IP:        ${{ secrets.DEPLOY_SERVER_IP }}
+        run: |
+          set -euo pipefail
+          SERVER_IP=$(echo "${DEPLOY_SERVER_IP}" | tr -d '[:space:]')
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf "%s\n" "${TENCENT_SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${SERVER_IP}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Remote login to GHCR (optional, for private images)
+        env:
+          GHCR_USERNAME:    ${{ secrets.GHCR_USERNAME }}
+          GHCR_READ_TOKEN:  ${{ secrets.GHCR_READ_TOKEN }}
+          DEPLOY_SSH_USER:  ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_SERVER_IP: ${{ secrets.DEPLOY_SERVER_IP }}
+        run: |
+          set -euo pipefail
+          SERVER_IP=$(echo "${DEPLOY_SERVER_IP}" | tr -d '[:space:]')
+          SSH_USER=$(echo "${DEPLOY_SSH_USER}" | tr -d '[:space:]')
+          if [[ -n "${GHCR_USERNAME}" && -n "${GHCR_READ_TOKEN}" ]]; then
+            if ssh "${SSH_USER}@${SERVER_IP}" \
+              "echo '${GHCR_READ_TOKEN}' | docker login ghcr.io -u '${GHCR_USERNAME}' --password-stdin" 2>&1; then
+              echo "Remote GHCR login successful."
+            else
+              echo "Remote GHCR login failed. Images are public, continuing anyway..."
+            fi
+          else
+            echo "GHCR_USERNAME/GHCR_READ_TOKEN not set; skip remote GHCR login."
+          fi
+
+      - name: Generate deploy artifacts (step1)
+        env:
+          DEPLOY_IMAGE_TAG:  ${{ needs.build-and-push.outputs.image_tag }}
+          DEPLOY_SERVER_IP:  ${{ secrets.DEPLOY_SERVER_IP }}
+          DEPLOY_SSH_USER:   ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_REMOTE_DIR: ${{ secrets.DEPLOY_REMOTE_DIR }}
+        run: |
+          set -euo pipefail
+          # scripts/deploy-release/ 路径来自 just-deploy-release skill
+          ./scripts/deploy-release/step1-prepare.sh default
+
+      - name: Deploy to server (step2)
+        env:
+          DEPLOY_SERVER_IP:  ${{ secrets.DEPLOY_SERVER_IP }}
+          DEPLOY_SSH_USER:   ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_REMOTE_DIR: ${{ secrets.DEPLOY_REMOTE_DIR }}
+          SKIP_DB_MIGRATION: ${{ github.event.inputs.skip_db_migration == true && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          ./scripts/deploy-release/step2-deploy.sh default
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "### Deployment Summary"                                          >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |"                                                 >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|"                                                 >> $GITHUB_STEP_SUMMARY
+          echo "| Server    | \`${{ secrets.DEPLOY_SERVER_IP }}\`              |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image Tag | \`${{ needs.build-and-push.outputs.image_tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| DB Migration | ${{ github.event.inputs.skip_db_migration == true && 'Skipped' || 'Executed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status }} |"                                  >> $GITHUB_STEP_SUMMARY
+          echo ""                                                                 >> $GITHUB_STEP_SUMMARY
+          # ⚙️ ADAPT: 改为你的实际域名
+          echo "**URLs**:"                               >> $GITHUB_STEP_SUMMARY
+          echo "- Admin:  https://admin.YOUR_DOMAIN"     >> $GITHUB_STEP_SUMMARY
+          echo "- API:    https://YOUR_DOMAIN/api/"      >> $GITHUB_STEP_SUMMARY

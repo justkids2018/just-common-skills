@@ -12,11 +12,11 @@ Keep all reusable skills in one place so multiple projects can apply them direct
 
 The platform-level mission, operating model, and review contract are defined here:
 
-- [System.md](System.md)
+- [system-platform/system-charter.md](system-platform/system-charter.md)
 
 System platform operation docs are here:
 
-- [docs/system-platform/README.md](docs/system-platform/README.md)
+- [system-platform/README.md](system-platform/README.md)
 
 ## Structure
 
@@ -76,6 +76,12 @@ After that, the target project uses the same shared skills directly.
 
 Use one script with two equivalent execution modes.
 
+Default behavior of the injector:
+
+- Clean-first: backup + remove existing managed files/links, then reinject.
+- Backup path: `.ai/inject-backup/<timestamp>/` inside target project.
+- Optional: pass `--no-clean-first` if you explicitly want merge/update behavior.
+
 Mode A: run from shared hub and pass target path
 
 ```bash
@@ -90,6 +96,14 @@ cd /absolute/path/to/target-project
 bash /absolute/path/to/just-common-skills/scripts/inject-current-project.sh --force
 ```
 
+Optional centralized-governance mode (recommended when you want project-side thin entries):
+
+```bash
+bash /absolute/path/to/just-common-skills/scripts/inject-current-project.sh /absolute/path/to/target-project --force --reference-entry
+```
+
+In this mode, `AGENTS.md` and `CLAUDE.md` are replaced by thin entry files that reference shared governance.
+
 What it creates/wires in the target project:
 
 - `AGENTS.md` (canonical governance)
@@ -98,12 +112,35 @@ What it creates/wires in the target project:
 - `.github/skills` (linked to this repo's `skills/`)
 - `.claude/skills` (compatibility alias to `.github/skills`)
 - `.ai/common-prompt` (linked to this repo's `common-prompt/`)
+- `.ai/system-platform` (linked to this repo's `system-platform/`)
 
 Quickstart guide:
 
 - [docs/quickstart-new-project.md](docs/quickstart-new-project.md)
 
 Both modes merge existing governance files (append/update managed block), create missing files, and wire shared assets via symlink.
+
+## Self Dogfooding (This Repo)
+
+This hub repository can also consume the same linked runtime assets to validate its own setup model.
+
+Run:
+
+```bash
+cd /absolute/path/to/just-common-skills
+bash ./scripts/self-dogfood.sh
+```
+
+What it wires locally:
+
+- `.github/skills` -> `skills/`
+- `.claude/skills` -> `.github/skills`
+- `.ai/common-prompt` -> `common-prompt/`
+- `.ai/system-platform` -> `system-platform/`
+
+Safety note:
+
+- This mode does not rewrite `AGENTS.md` or `CLAUDE.md`.
 
 ## Tell AI What To Do
 

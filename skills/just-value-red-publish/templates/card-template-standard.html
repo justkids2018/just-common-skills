@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小红书卡片 - Just 60 投资研究</title>
+  <link rel="stylesheet" href="./card-styles.css">
+</head>
+<body>
+
+<!-- ========== 卡片容器 ========== -->
+<div class="cards-container">
+
+  <!-- ========== 封面卡片 ========== -->
+  <div class="card" id="c1">
+    <!-- Just 60 徽章 -->
+    <div class="just-badge">Just 60</div>
+
+    <!-- 封面背景渐变（通过内联样式设置品牌色） -->
+    <div class="cover-bg" style="background: linear-gradient(135deg, #4a9eff 0%, #2563eb 100%);"></div>
+
+    <!-- 可选：公司 Logo/Icon 背景图 -->
+    <div class="cover-photo" id="coverPhotoLayer" style="display:none">
+      <img id="coverImg" src="" alt="" />
+    </div>
+
+    <!-- 封面内容 -->
+    <div class="cover-content">
+      <div class="cover-title">公司名称</div>
+      <div class="cover-subtitle">分析主题 · 时间周期</div>
+
+      <!-- 核心数据卡片（3个 hero-item） -->
+      <div class="hero-item">
+        <div class="hero-label">指标名称</div>
+        <div class="hero-text">数据值</div>
+      </div>
+      <div class="hero-item">
+        <div class="hero-label">指标名称</div>
+        <div class="hero-text">数据值</div>
+      </div>
+      <div class="hero-item">
+        <div class="hero-label">指标名称</div>
+        <div class="hero-text">数据值</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 内容卡片 2：核心数据 ========== -->
+  <div class="card content-card" id="c2">
+    <div class="just-badge">Just 60</div>
+    <div class="badge badge-blue">2</div>
+    <div class="card-title">核心数据</div>
+
+    <!-- 2×2 数据网格 -->
+    <div class="metric-grid">
+      <div class="metric-item">
+        <div class="metric-label">指标1</div>
+        <div class="metric-value">数据</div>
+        <div class="metric-change positive">+X%</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">指标2</div>
+        <div class="metric-value">数据</div>
+        <div class="metric-change positive">+X%</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">指标3</div>
+        <div class="metric-value">数据</div>
+        <div class="metric-change negative">-X%</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">指标4</div>
+        <div class="metric-value">数据</div>
+        <div class="metric-change neutral">持平</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 内容卡片 3：业务分析 ========== -->
+  <div class="card content-card" id="c3">
+    <div class="just-badge">Just 60</div>
+    <div class="badge badge-gold">3</div>
+    <div class="card-title">业务亮点</div>
+
+    <!-- 堆叠卡片 -->
+    <div class="stack-item">
+      <div class="stack-title">亮点标题</div>
+      <div class="stack-text">详细描述内容...</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-title">亮点标题</div>
+      <div class="stack-text">详细描述内容...</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-title">亮点标题</div>
+      <div class="stack-text">详细描述内容...</div>
+    </div>
+  </div>
+
+  <!-- ========== 内容卡片 4：战略分析 ========== -->
+  <div class="card content-card" id="c4">
+    <div class="just-badge">Just 60</div>
+    <div class="badge badge-green">4</div>
+    <div class="card-title">战略分析</div>
+
+    <div class="stack-item">
+      <div class="stack-title">战略方向</div>
+      <div class="stack-text">详细描述内容...</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-title">战略方向</div>
+      <div class="stack-text">详细描述内容...</div>
+    </div>
+  </div>
+
+  <!-- ========== 内容卡片 5：宏观评级 ========== -->
+  <div class="card content-card" id="c5">
+    <div class="just-badge">Just 60</div>
+    <div class="badge badge-purple">5</div>
+    <div class="card-title">宏观四维评级</div>
+
+    <!-- 2×2 评级网格 -->
+    <div class="rating-grid">
+      <div class="rating-item">
+        <div class="rating-label">高墙主义</div>
+        <div class="rating-value positive">✓ 受益</div>
+      </div>
+      <div class="rating-item">
+        <div class="rating-label">反脆弱性</div>
+        <div class="rating-value positive">✓ 强韧</div>
+      </div>
+      <div class="rating-item">
+        <div class="rating-label">两极分化</div>
+        <div class="rating-value positive">✓ 顺势</div>
+      </div>
+      <div class="rating-item">
+        <div class="rating-label">AI时代</div>
+        <div class="rating-value positive">✓ 卡位</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 内容卡片 6：风险分析 ========== -->
+  <div class="card content-card" id="c6">
+    <div class="just-badge">Just 60</div>
+    <div class="badge badge-blue">6</div>
+    <div class="card-title">最大风险</div>
+
+    <div class="stack-item">
+      <div class="stack-title">风险点</div>
+      <div class="stack-text">详细描述...</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-title">风险点</div>
+      <div class="stack-text">详细描述...</div>
+    </div>
+  </div>
+
+  <!-- ========== 内容卡片 7：估值分析 ========== -->
+  <div class="card content-card" id="c7">
+    <div class="just-badge">Just 60</div>
+    <div class="badge badge-gold">7</div>
+    <div class="card-title">估值分析</div>
+
+    <!-- 数据表格 -->
+    <div class="data-table">
+      <div class="data-row">
+        <div class="data-label">当前 P/E</div>
+        <div class="data-value">12.2x</div>
+      </div>
+      <div class="data-row">
+        <div class="data-label">目标 P/E</div>
+        <div class="data-value">15-18x</div>
+      </div>
+      <div class="data-row">
+        <div class="data-label">上涨空间</div>
+        <div class="data-value positive">+23% ~ +48%</div>
+      </div>
+    </div>
+
+    <div class="stack-item" style="margin-top: 12px;">
+      <div class="stack-title">投资建议</div>
+      <div class="stack-text">详细建议...</div>
+    </div>
+  </div>
+
+  <!-- ========== 免责声明（可选） ========== -->
+  <div class="card content-card" id="c8" style="display:none;">
+    <div class="just-badge">Just 60</div>
+    <div class="disclaimer-text">
+      本内容仅供学习交流，不构成投资建议。投资有风险，决策需谨慎。
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== 下载按钮 ========== -->
+<div class="download-section">
+  <button id="downloadAllBtn" class="download-btn">一键下载全部卡片</button>
+  <div id="downloadProgress" class="download-progress"></div>
+</div>
+
+<!-- ========== 脚本 ========== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  // ========== 封面图片加载逻辑 ==========
+  const coverPhotoLayer = document.getElementById('coverPhotoLayer');
+  const coverImg = document.getElementById('coverImg');
+
+  // 尝试加载封面图片（用户手动放置）
+  const photoCandidates = [
+    './logo.png', './icon.png', './cover.png', './main.png'
+  ];
+
+  let photoLoaded = false;
+  photoCandidates.forEach(src => {
+    if (photoLoaded) return;
+    const testImg = new Image();
+    testImg.onload = () => {
+      if (!photoLoaded) {
+        coverImg.src = src;
+        coverPhotoLayer.style.display = 'block';
+        photoLoaded = true;
+      }
+    };
+    testImg.src = src;
+  });
+
+  // ========== 一键下载功能 ==========
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+  const downloadProgress = document.getElementById('downloadProgress');
+
+  downloadAllBtn.addEventListener('click', async () => {
+    const cards = document.querySelectorAll('.card');
+    downloadProgress.textContent = '准备下载...';
+
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i];
+      if (card.style.display === 'none') continue;
+
+      const cardId = card.id;
+      downloadProgress.textContent = `正在生成 ${cardId} (${i + 1}/${cards.length})...`;
+
+      try {
+        const canvas = await html2canvas(card, {
+          scale: 2,
+          backgroundColor: null,
+          logging: false,
+          useCORS: true
+        });
+
+        const link = document.createElement('a');
+        link.download = `${String(i + 1).padStart(2, '0')}-${cardId}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } catch (error) {
+        console.error(`下载 ${cardId} 失败:`, error);
+      }
+    }
+
+    downloadProgress.textContent = '✅ 全部下载完成！';
+    setTimeout(() => {
+      downloadProgress.textContent = '';
+    }, 3000);
+  });
+</script>
+
+</body>
+</html>

@@ -8,6 +8,7 @@
 - 公共 skills（.github/skills）
 - 兼容链接（.claude/skills -> .github/skills）
 - 公共 baseline（.ai/common-prompt）
+- 公共平台规范（.ai/system-platform）
 
 ## 0. 前置条件
 
@@ -65,6 +66,11 @@ ls -la .ai/common-prompt
 - .github/skills 存在
 - .claude/skills 指向 .github/skills
 - .ai/common-prompt 存在
+- .ai/system-platform 存在
+
+任务收尾建议：执行
+[system-platform/06-compliance-checklist.md](../system-platform/06-compliance-checklist.md)
+中的 Task-Level Checklist，确认四件套完整。
 
 ## 4. 在新项目里如何触发 skills
 
@@ -81,6 +87,13 @@ ls -la .ai/common-prompt
 - 提交和 PR 收口 -> just-ship + just-document-release
 - 高风险操作保护 -> just-careful
 
+发布建议（强烈推荐）：
+
+- 每个版本发布前，由 `just-document-release` 产出
+	`docs/releases/<version>/architecture-record.md`
+- 模板参考：
+	`system-platform/templates/architecture-record.template.md`
+
 ## 5. 快速回滚（可选）
 
 如果你要移除注入内容，可以手动删除以下路径：
@@ -89,6 +102,7 @@ ls -la .ai/common-prompt
 cd /absolute/path/to/your-project
 rm -rf AGENTS.md CLAUDE.md .github/copilot-instructions.md .github/skills .claude/skills
 rm -rf .ai/common-prompt
+rm -rf .ai/system-platform
 ```
 
 ## 6. 故障排查
@@ -100,4 +114,11 @@ rm -rf .ai/common-prompt
 
 ```bash
 bash /absolute/path/to/just-common-skills/scripts/inject-current-project.sh --help
+```
+
+3. 公共仓库本身也要启用同一套能力（self-dogfooding）
+
+```bash
+cd /absolute/path/to/just-common-skills
+bash ./scripts/self-dogfood.sh
 ```
