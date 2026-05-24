@@ -3,7 +3,7 @@ name: just-value-red-publish
 description: |
   统一投资研究 skill。输入公司名 + 分析类型，自动完成：数据收集 → 框架分析 → 生成报告 →
   生成小红书文章 + HTML 卡片 → 发布到小红书。全程 4 个确认门，每个关键节点必须等用户确认才继续。
-version: 1.0
+version: 1.1
 trigger: /just-value-red-publish [公司名] [分析类型]
 ---
 
@@ -46,6 +46,13 @@ trigger: /just-value-red-publish [公司名] [分析类型]
 | **C 级**（情绪参考） | 新闻 / 分析师转述 / X / Reddit | 标注 ⚠️，严禁作为财务数据依据 |
 
 无法核实的数字一律标注 `[待官方核实]`。
+
+**执行现实约束**：优先复用用户已确认的现有产物，避免重复生成、重复发布、重复重启服务。
+
+**默认封面策略（v1.1）**：
+- 封面图优先使用：`cover.jpg` > `cover.jpeg` > `cover.png` > `hero.jpg` > `hero.jpeg` > `logo.png` > `icon.png` > `main.png`
+- 封面图展示为全幅背景图（突出主体），不再使用右下角旋转小图
+- 副标题建议 8-16 字，优先一句主结论（示例：`远景很大，利润为王`）
 
 **思想框架**：全程遵循 `个股研究/思考架构/投资研究思想框架.md`，分析层次为：
 - **第零层**：AI 时代定位（是否被重写？）
@@ -427,20 +434,21 @@ AI时代：[卡位受益 / 工具化存活 / 被瓦解风险] — [核心判断]
 6. 提示用户：可选将公司 Logo/Icon 放到同目录（如 `./logo.png`）
 
 **设计规范**（参照 `.claude/skills/just-value-red-publish/templates/README.md`）：
-- **尺寸**：370×550px 卡片，直角设计
+- **尺寸**：370×550px 基准尺寸，按视口自动等比缩放（移动端自适应）
 - **配色**：
-  - 封面：品牌色渐变（动态设置）+ 深色标题 `#1f2937`
+  - 封面：品牌色渐变（动态设置）+ 浅色标题 `#f8fafc`
   - 内容卡：统一深灰渐变 `linear-gradient(135deg, #1f2937 0%, #111827 100%)`
 - **Just 60 徽章**：右上角毛玻璃效果
   - `background: rgba(100, 100, 100, 0.35)`
   - `backdrop-filter: blur(20px)`
   - `border: 1.5px solid rgba(255, 255, 255, 0.2)`
 - **封面设计**：
-  - 标题颜色：深色 `#1f2937`（在彩色背景上）
+  - 标题颜色：浅色 `#f8fafc`（在实拍图叠加时更清晰）
+  - 封面图层：全幅背景图 + 渐变遮罩（左深右浅），兼顾图片突出与文案可读
   - hero-item：透明毛玻璃卡片
-    - `background: rgba(255, 255, 255, 0.03)`
+    - `background: rgba(10, 20, 35, 0.22)`
     - `backdrop-filter: blur(20px)`
-    - `border: 1.5px solid rgba(255, 255, 255, 0.08)`
+    - `border: 1.5px solid rgba(255, 255, 255, 0.16)`
   - 间距：`padding: 72px 28px 30px 28px`
   - 字体：标题28px，副标题14px，hero-text 13px
 - **内容卡设计**：
@@ -477,9 +485,9 @@ AI时代：[卡位受益 / 工具化存活 / 被瓦解风险] — [核心判断]
 - c7: 免责声明（可选）
 
 **封面 Logo/Icon 使用**：
-- 用户可选将公司 Logo/Icon（PNG格式）放到与 HTML 同目录
-- 文件名：`logo.png` / `icon.png` / `cover.png` / `main.png`
-- 模板会自动检测并显示在封面右下角（半透明、旋转-15°）
+- 用户可选将公司图片（JPG/PNG）放到与 HTML 同目录
+- 文件名优先级：`cover.jpg` / `cover.jpeg` / `cover.png` / `hero.jpg` / `hero.jpeg` / `logo.png` / `icon.png` / `main.png`
+- 模板会自动检测并作为封面全幅背景图显示（自动裁切）
 - 如果没有图片，纯色渐变背景也很专业
 
 **CSS变量定义**：
@@ -522,6 +530,7 @@ AI时代：[卡位受益 / 工具化存活 / 被瓦解风险] — [核心判断]
   ✅ 发布   — 内容无误，进入发布配置
   🔧 修改   — 需要调整内容（请说明）
   ⏸️ 暂存   — 先不发布，留存文件即可
+  ✅ 已手动发布 — 已在页面中点击发布，仅需记录结果
   ❌ 停止   — 放弃发布
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -533,6 +542,12 @@ AI时代：[卡位受益 / 工具化存活 / 被瓦解风险] — [核心判断]
 **前提**：仅在 GATE 3 用户回复"发布"后执行。
 
 ### 5.1 自动配置内置 publisher
+
+先解析发布目录（按顺序）：
+1. 读取 `config.json` 的 `publisher_path`
+2. 若为相对路径：按当前 workspace 根目录拼接
+3. 若不存在：回退到 `~/.claude/skills/just-value-red-publish/publisher`
+4. 若仍不存在：立即报错并停止，不得继续执行发布命令
 
 修改 `.claude/skills/just-value-red-publish/publisher/publish.js` 中的配置：
 
@@ -599,7 +614,7 @@ const POST = {
 ### 执行流程（遵循 `publishrednote.md` v5.0 规范）
 
 ```bash
-cd .claude/skills/just-value-red-publish/publisher
+cd [解析后的 publisher 目录]
 
 # Step 1: 检查服务状态
 npm run check
@@ -610,6 +625,10 @@ npm run publish
 # 或定时发布（用户选时间）
 npm run publish:scheduled
 ```
+
+若用户明确表示“已手动点击发布”或“已在页面发布”：
+- 不再重启 MCP、不重复执行 `npm run publish`
+- 直接进入发布结果记录与复盘输出
 
 ### 自动处理：
 1. 检查 MCP 服务状态（端口 18060）
@@ -642,6 +661,7 @@ npm run publish:scheduled
 - [ ] 宏观四维每个维度都有明确结论（不允许"有待观察"）
 - [ ] 小红书文案不含买卖建议、不贩卖焦虑
 - [ ] 每张 HTML 卡片都有 Just 60 水印
+- [ ] 封面副标题为一句主结论（建议 8-16 字）
 - [ ] 跟踪指标给出了双向意义（目标值 + 警示值）
 - [ ] 末尾注明"以上仅为个人研究，不构成投资建议"
 
@@ -661,7 +681,7 @@ npm run publish:scheduled
 
 ---
 
-**Skill 版本**：1.0
+**Skill 版本**：1.1
 **触发命令**：`/just-value-red-publish`
-**更新日期**：2026-05-06
+**更新日期**：2026-05-24
 **关联框架**：`个股研究/思考架构/投资研究思想框架.md`

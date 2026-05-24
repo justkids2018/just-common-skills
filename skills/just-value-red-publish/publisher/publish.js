@@ -28,58 +28,47 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const MCP_URL = 'http://localhost:18060/mcp';
 const IMAGES_DIR = path.join(__dirname, 'images');
-const CARDS_HTML = path.join(__dirname, '..', 'Just学投资', '腾讯研究', '腾讯-Q1-2026-cards.html');
-const ARTICLE_MD = path.join(__dirname, '..', 'Just学投资', '腾讯研究', '腾讯-财报分析-Q1-2026-20260517.md');
+const WORKSPACE_ROOT = '/Users/qisd/Documents/development/ai/thinking';
+const CARDS_HTML = path.join(WORKSPACE_ROOT, 'Just学投资', 'spaceX研究', 'cards.html');
+const ARTICLE_MD = path.join(WORKSPACE_ROOT, 'Just学投资', 'spaceX研究', 'spaceX-商业分析-2026-05-24.md');
 const MAX_TITLE_CHARS = 28;
 const MAX_CONTENT_CHARS = 1000;
-const ARTICLE_TAGS = ['腾讯财报', 'AI投资', '价值投资', '港股', '科技股分析', '混元大模型', '微信生态', 'Just60投资笔记'];
+const ARTICLE_TAGS = ['SpaceX', '商业模式', '利润分析', '卫星互联网', '火箭发射', '长期主义', '投资研究', 'Just60投资笔记'];
 
 /** 要截图的卡片 ID（对应 cards.html 中 .card 的 id 属性） */
 const CARDS = [
   { id: 'c1', name: '01-封面' },
-  { id: 'c2', name: '02-核心数据' },
-  { id: 'c3', name: '03-混元3突破' },
-  { id: 'c4', name: '04-小程序技能化' },
-  { id: 'c5', name: '05-宏观评级' },
-  { id: 'c6', name: '06-最大风险' },
-  { id: 'c7', name: '07-估值分析' },
+  { id: 'c2', name: '02-利润数据' },
+  { id: 'c3', name: '03-收入结构' },
+  { id: 'c4', name: '04-估值框架' },
+  { id: 'c5', name: '05-竞争格局' },
+  { id: 'c6', name: '06-多空论点' },
+  { id: 'c7', name: '07-宏观评级' },
+  { id: 'c8', name: '08-结论与跟踪' },
+  { id: 'c9', name: '09-免责声明' },
 ];
 
 /** 小红书发布内容配置 — 按需修改 */
 const POST = {
-  title: '腾讯Q1财报：AI转型期的财务与战略全景',
+  title: 'SpaceX 商业分析：远景很大，利润为王',
   content: [
-    '大家都在担心腾讯AI烧钱，但我看完Q1财报，反而觉得这是个机会。',
+    '火星计划很宏大，这点没人反对。',
+    '但把它当一家企业看，最关键还是商业模式和利润闭环。',
     '',
-    '**先说数字**',
-    '收入196亿（+9%），利润率38.5%。AI投入拖累利润率4.5个点，但剔除AI后，核心业务利润率43%，还涨了3个点！',
+    '我这次把 SpaceX 拆成四层：发射服务、Starlink、Starship、新业务协同。',
+    '看到最清楚的一点是：现金流主要靠前两层，估值弹性主要靠后两层。',
     '',
-    '这意味着什么？腾讯不是在用AI救命，而是在用赚钱的业务养AI。',
+    '最值得盯的不是口号，而是三个数字：',
+    '1) Starlink 企业/政企占比',
+    '2) Starship 发射频次和单次成本',
+    '3) 新业务协同收入验证率',
     '',
-    '**三个反直觉的发现**',
+    '一句话总结：远景给上限，现金流给底线。',
+    '没有利润闭环，宏大叙事很难长期兑现。',
     '',
-    '1️⃣ 混元3不是PPT，是真能打',
-    'OpenRouter平台Token消耗排名第一，连免费期结束后都保持领先。',
-    '',
-    '2️⃣ 小程序技能化，这招太狠了',
-    '未来AI智能体可以直接调用小程序作为”技能”。14亿微信用户的生态，瞬间变成AI时代最大的”技能库”。',
-    '',
-    '3️⃣ AI烧钱，但现金流+20%',
-    'Q1自由现金流57亿（+20%），净现金147亿。游戏、广告、支付这些业务太能赚钱了。',
-    '',
-    '**空方最强论点**',
-    'AI智能体竞争太激烈。字节的豆包、苹果的Siri升级版都在虎视眈眈。2026-2027年是关键窗口。',
-    '',
-    '**我的判断**',
-    '当前估值P/E 12倍，历史低位。腾讯卡住了”界面”这个瓶颈（微信/QQ），核心业务强劲，管理层长期主义。',
-    '',
-    '类比：就像2010年微信刚出来时，大家也担心腾讯烧钱。但现在回头看，那是最好的投资。',
-    '',
-    '---',
-    '',
-    '⚠️ 以上仅为个人研究，不构成投资建议。投资有风险，决策需谨慎。',
+    '⚠️ 以上仅为个人研究，不构成投资建议。',
   ].join('\n'),
-  tags: ['腾讯财报', 'AI投资', '价值投资', '港股', '科技股分析', '混元大模型', '微信生态', 'Just60投资笔记'],
+  tags: ['SpaceX', '商业分析', '利润为王', '卫星互联网', '火箭经济', '长期主义', '投资研究', 'Just60投资笔记'],
   is_original: true,
   visibility: '公开可见',
 };

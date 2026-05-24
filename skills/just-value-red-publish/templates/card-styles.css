@@ -14,6 +14,8 @@
 
 /* ========== CSS 变量定义 ========== */
 :root {
+  --card-width: min(370px, calc(100vw - 24px));
+
   /* 背景渐变 */
   --content-bg: linear-gradient(135deg, #1f2937 0%, #111827 100%);
 
@@ -42,26 +44,27 @@
 body {
   background: #e5e7eb;
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  padding: 24px 0 48px;
+  padding: 16px 0 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .cards-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+  width: 100%;
 }
 
 /* ========== 卡片基础样式 ========== */
 .card {
-  width: 370px;
-  height: 550px;
-  min-height: 550px;
-  max-height: 550px;
+  width: var(--card-width);
+  height: calc(var(--card-width) * 550 / 370);
+  min-height: calc(var(--card-width) * 550 / 370);
+  max-height: calc(var(--card-width) * 550 / 370);
   position: relative;
   overflow: hidden;
   border-radius: 0;
@@ -104,20 +107,26 @@ body {
 
 .cover-photo {
   position: absolute;
-  right: -40px;
-  bottom: -40px;
-  width: 280px;
-  height: 280px;
+  inset: 0;
   z-index: 1;
-  opacity: 0.25;
-  transform: rotate(-15deg);
+  opacity: 0.68;
 }
 
 .cover-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 20px;
+  object-position: 62% 60%;
+  border-radius: 0;
+  filter: saturate(1.08) contrast(1.06);
+}
+
+#c1::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(8, 14, 24, 0.66) 0%, rgba(8, 14, 24, 0.40) 46%, rgba(8, 14, 24, 0.18) 100%);
+  z-index: 2;
 }
 
 .cover-content {
@@ -132,8 +141,8 @@ body {
   font-size: 28px;
   font-weight: 900;
   line-height: 1.2;
-  color: #1f2937;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: #f8fafc;
+  text-shadow: 0 4px 18px rgba(2, 6, 23, 0.65);
 }
 
 .cover-subtitle {
@@ -146,13 +155,13 @@ body {
 
 /* 封面数据卡片（透明毛玻璃） */
 .hero-item {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(10, 20, 35, 0.22);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
   padding: 10px 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 22px rgba(2, 6, 23, 0.18);
 }
 
 .hero-label {
@@ -391,7 +400,7 @@ body {
 
 /* ========== 下载按钮 ========== */
 .download-section {
-  width: 370px;
+  width: var(--card-width);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -429,14 +438,37 @@ body {
 
 /* ========== 响应式（可选） ========== */
 @media (max-width: 400px) {
+  :root {
+    --card-width: calc(100vw - 16px);
+  }
+
+  body {
+    padding: 8px 0 24px;
+    gap: 12px;
+  }
+
+  .cards-container {
+    gap: 12px;
+  }
+
   .card {
-    width: 100%;
-    max-width: 370px;
+    width: var(--card-width);
   }
 
   .download-section {
-    width: 100%;
-    max-width: 370px;
-    padding: 0 20px;
+    width: var(--card-width);
+    padding: 0;
+  }
+
+  #c1 {
+    padding: 54px 18px 20px 18px;
+  }
+
+  .cover-title {
+    font-size: 24px;
+  }
+
+  .cover-subtitle {
+    font-size: 13px;
   }
 }

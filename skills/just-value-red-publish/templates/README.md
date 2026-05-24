@@ -9,7 +9,7 @@
 ## 📁 文件说明
 
 ```
-.claude/templates/
+.claude/skills/just-value-red-publish/templates/
 ├── card-template-standard.html    # 标准 HTML 模板
 ├── card-styles.css                # 独立 CSS 样式
 └── README.md                      # 本文档
@@ -20,7 +20,7 @@
 ## 🎨 设计规范
 
 ### 卡片尺寸
-- **固定尺寸**：370×550px
+- **基准尺寸**：370×550px（按视口自动等比缩放）
 - **直角设计**：无圆角
 - **边框**：2px solid rgba(255, 255, 255, 0.1)
 
@@ -28,8 +28,9 @@
 
 #### 封面卡片
 - **背景**：品牌色渐变（根据公司动态设置）
-- **标题颜色**：深色 `#1f2937`（在彩色背景上更清晰）
+- **标题颜色**：浅色 `#f8fafc`（叠加实拍图时更清晰）
 - **副标题/正文**：白色半透明 `rgba(255, 255, 255, 0.92)`
+- **封面图层**：默认全幅铺满 + 左深右浅遮罩，确保“图像突出 + 文案可读”
 
 #### 内容卡片
 - **背景**：统一深灰渐变 `linear-gradient(135deg, #1f2937 0%, #111827 100%)`
@@ -96,26 +97,30 @@ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 ## 🖼️ 封面 Logo/Icon 使用
 
 ### 图片准备
-1. **格式**：PNG（推荐透明背景）
-2. **尺寸**：建议 512×512px 或更大（会自动缩放到 280×280px）
-3. **命名**：`logo.png` / `icon.png` / `cover.png` / `main.png`
+1. **格式**：JPG 或 PNG（封面大图建议 JPG）
+2. **尺寸**：建议 1080×1600px 或更大（会自动裁切为封面全幅背景）
+3. **命名**（推荐顺序）：`cover.jpg` / `cover.jpeg` / `cover.png` / `hero.jpg` / `hero.jpeg` / `logo.png` / `icon.png` / `main.png`
 4. **位置**：与生成的 HTML 文件放在同一目录
 
 ### 自动加载逻辑
 模板会自动尝试加载以下文件名：
+- `./cover.jpg`
+- `./cover.jpeg`
+- `./cover.png`
+- `./hero.jpg`
+- `./hero.jpeg`
 - `./logo.png`
 - `./icon.png`
-- `./cover.png`
 - `./main.png`
 
-如果找到任何一个，会自动显示在封面右下角（半透明、旋转 -15°）。
+如果找到任何一个，会自动显示为封面全幅背景图（自动裁切、突出主体）。
 
 ### 手动设置
 如果需要指定特定图片，修改 HTML 中的 `photoCandidates` 数组：
 ```javascript
 const photoCandidates = [
-  './微信.png',      // 优先尝试
-  './wechat.png',
+  './cover.jpg',
+  './hero.jpg',
   './logo.png'
 ];
 ```
@@ -152,8 +157,8 @@ const photoCandidates = [
 ### 方式一：复制模板（推荐）
 ```bash
 # 复制到目标目录
-cp .claude/templates/card-template-standard.html ./目标目录/cards.html
-cp .claude/templates/card-styles.css ./目标目录/card-styles.css
+cp .claude/skills/just-value-red-publish/templates/card-template-standard.html ./目标目录/cards.html
+cp .claude/skills/just-value-red-publish/templates/card-styles.css ./目标目录/card-styles.css
 
 # 编辑 cards.html，填入实际内容
 ```
@@ -181,8 +186,8 @@ research skill 会自动：
 
 ### 1. 封面设计
 - **标题**：简洁有力，1-2行
-- **副标题**：说明分析类型和时间周期
-- **hero-item**：3个最核心的数据/洞察
+- **副标题**：一句主结论（建议 8-16 字）
+- **hero-item**：建议“1个核心事实 + 1个核心观点 + 1个关键矛盾”
 
 ### 2. 内容密度
 - **每张卡片**：2-4个信息点
@@ -212,6 +217,11 @@ research skill 会自动：
 - ✅ 支持封面 Logo/Icon
 - ✅ 毛玻璃效果标准化
 - ✅ 一键下载功能
+
+### v1.1 (2026-05-24)
+- ✅ 封面升级为全幅背景图（主体更突出）
+- ✅ 新增“结论先行”封面文案规范
+- ✅ 卡片与下载区支持移动端自适应缩放
 
 ---
 
