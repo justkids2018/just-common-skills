@@ -19,7 +19,7 @@ jobs:
       - name: Check for broken symlinks
         run: |
           # Exclude dogfooding symlinks (.github/skills, .claude/skills, .ai/*)
-          broken=$(find . -type l ! -exec test -e {} \; -print | grep -v '^\./\.github/skills$' | grep -v '^\./\.claude/skills$' | grep -v '^\./\.ai/')
+          broken=$(find . -type l ! -exec test -e {} \; -print 2>/dev/null | grep -v '^\./\.github/skills$' | grep -v '^\./\.claude/skills$' | grep -v '^\./\.ai/' || true)
           if [ -n "$broken" ]; then
             echo "Found broken symlinks:"
             echo "$broken"
