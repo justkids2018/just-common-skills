@@ -95,15 +95,12 @@ npx skills add qisd/just-common-skills --skill just-dev-pipeline -a claude-code 
 
 ## Installation
 
-### Quick Install (npx)
-\`\`\`bash
-npx skills add qisd/just-common-skills -a claude-code -g -y
-\`\`\`
+### Quick Install
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/qisd/just-common-skills/main/scripts/quick-install.sh)
+```
 
-### Download Package
-Download `just-common-skills.zip` from this release and:
-- **Claude Desktop**: Upload via Customize > Skills > "+" > Create skill
-- **Manual**: Extract to `~/.claude/skills/just-common-skills`
+Automatically installs to Claude Code, GitHub Copilot, and Codex.
 
 ### Full Documentation
 See [README.md](https://github.com/qisd/just-common-skills/blob/v1.1.0/README.md) for complete installation and usage instructions.

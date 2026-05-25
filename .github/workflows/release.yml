@@ -35,27 +35,26 @@ jobs:
           cat > release-notes.md << 'EOF'
           ## Just-Common-Skills ${{ github.event.release.tag_name }}
 
-          ### Installation
+          ### 一键安装
 
           ```bash
-          git clone https://github.com/${{ github.repository }} ~/just-common-skills
-          cd ~/just-common-skills
-          git checkout ${{ github.event.release.tag_name }}
-          ./scripts/install-skills.sh
+          bash <(curl -fsSL https://raw.githubusercontent.com/qisd/just-common-skills/main/scripts/quick-install.sh)
           ```
 
-          ### What's Included
+          自动安装到 Claude Code、GitHub Copilot、Codex。
 
-          - 1 orchestrator: `just-dev-pipeline`
-          - 7 core workers: `just-plan-eng-review`, `just-qa`, `just-review`, `just-ship`, `just-document-release`, `just-investigate`, `just-careful`
-          - 7 specialized skills: CI/CD, deployment, analysis, and domain-specific workflows
-          - 6 baseline standards documents
+          ### 包含内容
 
-          ### Documentation
+          - 1 个编排器: `just-dev-pipeline`
+          - 7 个核心工作器: `just-plan-eng-review`, `just-qa`, `just-review`, `just-ship`, `just-document-release`, `just-investigate`, `just-careful`
+          - 7 个专用技能: CI/CD、部署、分析等
+          - 6 个 baseline 标准文档
+
+          ### 文档
 
           - [README.md](https://github.com/${{ github.repository }}/blob/${{ github.event.release.tag_name }}/README.md)
-          - [Quickstart Guide](https://github.com/${{ github.repository }}/blob/${{ github.event.release.tag_name }}/docs/quickstart-new-project.md)
-          - [Framework Comparison](https://github.com/${{ github.repository }}/blob/${{ github.event.release.tag_name }}/docs/framework-comparison-waza-vs-just.md)
+          - [快速开始](https://github.com/${{ github.repository }}/blob/${{ github.event.release.tag_name }}/docs/quickstart-new-project.md)
+          - [发布指南](https://github.com/${{ github.repository }}/blob/${{ github.event.release.tag_name }}/docs/RELEASE_GUIDE.md)
 
           EOF
 

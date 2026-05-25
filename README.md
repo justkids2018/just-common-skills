@@ -84,75 +84,36 @@ just-dev-pipeline (编排器)
 
 ---
 
-## 安装和更新
+## 安装
 
-### 方式 1：通过 npx（最简单）
+### 一键安装（推荐）
 
-直接从 GitHub 仓库安装，无需克隆：
-
-```bash
-# 安装所有技能到 Claude Code
-npx skills add qisd/just-common-skills -a claude-code -g -y
-
-# 或安装单个技能
-npx skills add qisd/just-common-skills --skill just-dev-pipeline -a claude-code -g -y
-```
-
-### 方式 2：下载 Release 包
-
-从 [GitHub Releases](https://github.com/qisd/just-common-skills/releases/latest) 下载 `just-common-skills.zip`：
-
-**Claude Desktop:**
-1. 下载 `just-common-skills.zip`
-2. 打开 Claude Desktop → Customize → Skills → "+" → Create skill
-3. 上传 zip 文件
-
-**手动安装:**
-```bash
-# 下载最新版本
-curl -L https://github.com/qisd/just-common-skills/releases/latest/download/just-common-skills.zip -o just-common-skills.zip
-
-# 解压到 Claude Code skills 目录
-unzip just-common-skills.zip -d ~/.claude/skills/just-common-skills
-```
-
-### 方式 3：全局安装（开发者模式）
-
-将技能安装到全局运行时路径，所有项目共享：
+自动安装到 Claude Code、GitHub Copilot、Codex：
 
 ```bash
-git clone https://github.com/qisd/just-common-skills.git ~/just-common-skills
-cd ~/just-common-skills
-./scripts/install-skills.sh
+bash <(curl -fsSL https://raw.githubusercontent.com/qisd/just-common-skills/main/scripts/quick-install.sh)
 ```
 
-这会安装到：
-- `~/.claude/skills` (Claude Code 默认路径)
-
-可选：同时安装到 VS Code prompts 镜像
-
-```bash
-./scripts/install-skills.sh --with-vscode-prompts
-```
-
-可选：快照模式（复制而非符号链接）
-
-```bash
-./scripts/install-skills.sh --copy
-```
+这会：
+- 克隆仓库到 `~/.just-common-skills`
+- 创建软链接到 `~/.claude/skills`、`~/.github/skills`、`~/.codex/skills`
+- 所有项目自动共享最新版本
 
 ### 更新技能
 
-**npx 方式:**
+重新运行安装命令即可：
+
 ```bash
-npx skills update -g -y
+bash <(curl -fsSL https://raw.githubusercontent.com/qisd/just-common-skills/main/scripts/quick-install.sh)
 ```
 
-**手动方式:**
+### 卸载
+
 ```bash
-cd ~/just-common-skills
-git pull
-./scripts/install-skills.sh
+rm -rf ~/.just-common-skills
+rm -rf ~/.claude/skills/just-*
+rm -rf ~/.github/skills/just-*
+rm -rf ~/.codex/skills/just-*
 ```
 
 ### 项目注入（推荐用于团队项目）
