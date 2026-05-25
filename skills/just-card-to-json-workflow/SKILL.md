@@ -328,6 +328,45 @@ JSON 结构硬约束（默认强制）：
 2. `DONE_WITH_CONCERNS`：评分 >= 门槛，但存在可接受告警（如体积略超阈值、未要求 Admin、或存在 `object_skipped`）
 3. `BLOCKED`：评分 < 门槛、关键输入缺失、或尺寸/文件处理失败
 
+## Three-Question Design Test
+
+### Q1: What exact job does this skill perform?
+Execute end-to-end learning card production: validate image+MD inputs, auto-normalize to 1024×1024, compress to ≤200KB, generate hotspot JSON (grouped item structure with card+object regions), run HTML scoring loop until ≥89 threshold, and output final artifacts with quality assessment.
+
+### Q2: When should it activate? List at least 5 trigger phrases.
+1. "run card workflow" or "card end-to-end process"
+2. "image + MD to JSON" or "generate card JSON"
+3. "89 score threshold" or "card production workflow"
+4. "from prompt to admin" or "learning card workflow"
+5. "batch process scene cards" or "validate and score cards"
+
+### Q3: What does perfect output look like? Include one concrete output example.
+Perfect output includes: normalized 1024×1024 image ≤200KB, valid items_data JSON with grouped structure (each item has card+object regions), HTML score ≥89 PASS, quality assessment report, and optional admin upload confirmation.
+
+Example:
+```
+✅ Card Production Complete: 操场晨练
+
+Input:
+- Card dir: scene_01_晨光乐趣/kik_晨光乐趣_01_操场晨练
+- Image: 操场晨练.jpg (1200×1200, 450KB)
+- Markdown: 操场晨练.md (12 vocabulary items)
+
+Processing:
+- Image normalized: 1024×1024 ✓
+- Image compressed: 185KB ✓
+- JSON generated: 12 items, 12 card regions, 10 object regions (2 skipped: 哨子/瓢虫 too small)
+- HTML score: 92 PASS ✓
+
+Output:
+- Final image: 操场晨练.jpg (1024×1024, 185KB)
+- Final JSON: 操场晨练.json
+- Status: DONE_WITH_CONCERNS (2 object regions skipped due to size)
+- Quality: High accuracy, minor overlap 6% (acceptable)
+
+Admin: Ready for upload (not submitted yet)
+```
+
 ## 反模式（禁止）
 
 1. ❌ 未评分直接上传 Admin

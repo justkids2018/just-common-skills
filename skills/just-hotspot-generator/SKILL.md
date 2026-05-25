@@ -169,6 +169,39 @@ description:
 2. 补全词汇字段
 3. 人工微调冲突区域
 
+## Three-Question Design Test
+
+### Q1: What exact job does this skill perform?
+Generate high-precision hotspot JSON (items_data structure) from a 1024x1024 scene image and vocabulary Markdown. Output includes mandatory `card` regions and optional `object` regions per vocabulary item, with enforced accuracy checks and H5 preview verification.
+
+### Q2: When should it activate? List at least 5 trigger phrases.
+1. "generate hotspots from this image"
+2. "create items_data JSON" or "produce hotspot JSON"
+3. "image + MD to JSON" or "auto-annotate regions"
+4. "generate card/object regions" or "hotspot coordinates needed"
+5. "1024x1024 hotspot generation"
+
+### Q3: What does perfect output look like? Include one concrete output example.
+Perfect output includes: valid items_data JSON with grouped vocabulary structure, hotspot-report.md with accuracy metrics (overlap rates, boundary checks), and H5 preview screenshot showing accurate card/object region alignment.
+
+Example:
+```
+✅ Hotspot Generation: DONE
+
+Scene: classroom
+Vocabulary: 12 items extracted
+Output: kiki_web/assets/data/classroom/kiki_classroom.json
+
+Accuracy Checks:
+- Boundary: All regions within [0, 1023] ✓
+- Area: card >= 48x48, object >= 36x36 ✓
+- Overlap: Max 8% between items ✓
+- H5 Preview: doc/card-generation/runs/classroom/preview-verify.png ✓
+
+Report: doc/card-generation/runs/classroom/hotspot-report.md
+Status: DONE
+```
+
 ## 反模式（禁止）
 
 1. ❌ 输出旧扁平结构作为主结果

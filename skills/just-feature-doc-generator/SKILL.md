@@ -152,6 +152,48 @@ description: |
 2. 只更新受影响章节。
 3. 在文档末尾增加 `Update Log`（日期 + 改动摘要 + 证据文件）。
 
+## Three-Question Design Test
+
+### Q1: What exact job does this skill perform?
+Reverse-engineer feature documentation from existing code: extract real behavior, generate business-readable requirement/logic/API docs in `doc/feature-docs/<feature>/`, using business terminology only (no code names, file paths, or implementation details), with mandatory flowcharts and sequence diagrams.
+
+### Q2: When should it activate? List at least 5 trigger phrases.
+1. “analyze this feature and generate docs” or “document this feature”
+2. “generate requirement and API docs from code”
+3. “reverse-engineer feature documentation”
+4. “extract business logic and write docs”
+5. “create feature docs for existing implementation”
+
+### Q3: What does perfect output look like? Include one concrete output example.
+Perfect output includes: three complete docs (01-requirement.md with scope/acceptance criteria, 02-logic.md with flowchart+sequence diagram using business terms, 03-api.md with full contract including request/response/errors/examples), all using business language with no code references.
+
+Example:
+```
+✅ Feature Documentation Generated: User Login
+
+Output:
+- doc/feature-docs/user-login/01-requirement.md
+  - Goal: Allow users to authenticate with email/password
+  - In Scope: Login, logout, session management
+  - Out of Scope: Social login, 2FA
+  - Acceptance: User can login and access protected resources
+
+- doc/feature-docs/user-login/02-logic.md
+  - Main flow: User submits credentials → System validates → Session created
+  - Exception flow: Invalid credentials → Error message → Retry allowed
+  - Flowchart: [Mermaid diagram with User/Client/Auth System/Database]
+  - Sequence diagram: [Login flow with business actors]
+
+- doc/feature-docs/user-login/03-api.md
+  - POST /auth/login
+  - Request: { email, password }
+  - Success: { token, expiresAt, user: { id, name, role } }
+  - Errors: 401 Invalid credentials, 429 Too many attempts
+  - Example request/response included
+
+All docs use business terminology. No class names, file paths, or code snippets.
+```
+
 ## 反模式（禁止）
 
 - ❌ 只看文件名就下结论，不读实现逻辑
@@ -159,9 +201,9 @@ description: |
 - ❌ 生成接口文档但不核对实际参数/返回
 - ❌ 覆盖整个文档而不保留更新日志
 - ❌ 在文档中粘贴代码、SQL、类名、函数名、文件路径
-- ❌ 用“实现细节”替代“业务规则和契约”
+- ❌ 用”实现细节”替代”业务规则和契约”
 
 ## 与 just-dev-pipeline 的协作
 
 1. 可在 `just-dev-pipeline` 的第 2 步（现状分析）或第 6 步（提交前收口）调用本 skill。
-2. 若用户仅要求“先把某功能文档梳理出来”，优先调用本 skill。
+2. 若用户仅要求”先把某功能文档梳理出来”，优先调用本 skill。
