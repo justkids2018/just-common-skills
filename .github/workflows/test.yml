@@ -1,0 +1,73 @@
+name: test
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq ripgrep
+
+      - name: Validate skills structure
+        run: ./scripts/validate-skills.sh
+
+      - name: Check for broken symlinks
+        run: |
+          if find . -type l ! -exec test -e {} \; -print | grep -q .; then
+            echo "Found broken symlinks:"
+            find . -type l ! -exec test -e {} \; -print
+            exit 1
+          fi
+          echo "No broken symlinks found"
+
+      - name: Verify SKILL.md files exist
+        run: |
+          for skill_dir in skills/just-*/; do
+            if [ ! -f "${skill_dir}SKILL.md" ]; then
+              echo "Missing SKILL.md in ${skill_dir}"
+              exit 1
+            fi
+          done
+          echo "All skills have SKILL.md files"
+
+      - name: Check baseline documentation
+        run: |
+          baseline_docs=(
+            "common-prompt/baseline/01-design-principles.md"
+            "common-prompt/baseline/02-architecture.md"
+            "common-prompt/baseline/03-coding-standards.md"
+            "common-prompt/baseline/04-testing-standards.md"
+            "common-prompt/baseline/05-git-workflow.md"
+            "common-prompt/baseline/06-skill-workflow-standards.md"
+          )
+          for doc in "${baseline_docs[@]}"; do
+            if [ ! -f "$doc" ]; then
+              echo "Missing baseline document: $doc"
+              exit 1
+            fi
+          done
+          echo "All baseline documents present"
+
+      - name: Verify scripts are executable
+        run: |
+          for script in scripts/*.sh; do
+            if [ ! -x "$script" ]; then
+              echo "Script not executable: $script"
+              exit 1
+            fi
+          done
+          echo "All scripts are executable"
+
+      - name: Check for trailing whitespace
+        run: |
+          if git diff --check HEAD~1 2>/dev/null; then
+            echo "No trailing whitespace found"
+          else
+            echo "Found trailing whitespace"
+            exit 1
+          fi
