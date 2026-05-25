@@ -416,6 +416,44 @@ scripts/deploy-release/
 
 ---
 
+## Three-Question Design Test
+
+### Q1: What exact job does this skill perform?
+Replicate GitHub Actions CI/CD workflows to new projects: collect project parameters, generate adapted yml files (CI validation, Android/iOS release, Docker build+deploy), guide Secrets configuration step-by-step, and verify triggers work correctly.
+
+### Q2: When should it activate? List at least 5 trigger phrases.
+1. "set up CI/CD for new project" or "configure GitHub Actions"
+2. "migrate workflows to new repo" or "copy CI pipeline"
+3. "how to configure APK auto-build?" or "set up Android signing"
+4. "configure Docker auto-deploy" or "set up release pipeline"
+5. "help me with GitHub Actions setup" or "need full CI/CD workflow"
+
+### Q3: What does perfect output look like? Include one concrete output example.
+Perfect output includes: adapted yml files with all placeholders replaced, step-by-step Secrets configuration guide with exact commands to generate values, file placement instructions, and trigger verification steps.
+
+Example:
+```
+✅ GitHub Actions Setup Complete
+
+Workflows Generated:
+1. .github/workflows/ci-validate.yml (Flutter analyze on every push)
+2. .github/workflows/android-release.yml (APK/AAB signing + artifact upload)
+3. .github/workflows/docker-release.yml (Build + push to GHCR + SSH deploy)
+
+Secrets Configured (3/3):
+✓ ANDROID_KEYSTORE_BASE64
+✓ ANDROID_STORE_PASSWORD
+✓ SSH_DEPLOY_PRIVATE_KEY
+
+Next Steps:
+1. Push workflows to repo
+2. Actions → CI Validate → Run workflow (verify flutter analyze passes)
+3. Actions → Android Release Build → Run workflow (verify APK in Artifacts)
+4. Push to main (triggers Docker build + deploy)
+
+All placeholders replaced. Ready to use.
+```
+
 ## Quick Triggers
 
 - "帮我把 CI/CD workflow 移到新项目"

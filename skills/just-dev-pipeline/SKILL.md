@@ -228,6 +228,35 @@ doc/features/<feature>/runs/<task-id>/
 - "切到 fast" → 后续段切 fast
 - "全自动跑完" → 后续段切 yolo
 
+## Three-Question Design Test
+
+### Q1: What exact job does this skill perform?
+Orchestrate end-to-end feature development through 6 mandatory phases: requirement clarification → code/doc analysis → design & task breakdown → implementation with iterative QA → self-review & fixes → commit/PR with doc closure. All artifacts land in `doc/features/<feature>/`.
+
+### Q2: When should it activate? List at least 5 trigger phrases.
+1. "implement XX feature" or "add XX functionality"
+2. "I want to build XX" or "develop XX for me"
+3. "my requirement is XX" or "new feature: XX"
+4. "help me create a PR for XX"
+5. "build this end-to-end" or "full development workflow"
+
+### Q3: What does perfect output look like? Include one concrete output example.
+Perfect output includes: complete doc set (01-requirement.md through 08-doc-updates.md), working code passing all tests, per-task run evidence with RUN_LOG.md, UI screenshots for mobile changes, clean commits with proper messages, and a ready-to-review PR draft.
+
+Example:
+```
+✅ Feature: User Profile Edit
+
+Phase 1: Requirement clarified (doc/features/profile-edit/01-requirement.md)
+Phase 2: Analysis complete (02-analysis.md)
+Phase 3: Design reviewed, 3 tasks defined (03-design.md, 04-tasks.md)
+Phase 4: Task 1/3 implemented & verified (runs/task-01/RUN_LOG.md, ui/)
+Phase 5: Code review passed (06-review.md)
+Phase 6: 3 commits pushed, PR #42 created (07-pr.md)
+
+All tests passing. Ready for review.
+```
+
 ## 反模式（禁止）
 
 - ❌ 跳过段 1 直接写代码

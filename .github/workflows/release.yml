@@ -1,0 +1,81 @@
+name: release
+on:
+  release:
+    types: [published]
+jobs:
+  validate-and-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq ripgrep
+
+      - name: Re-run full validation against tagged commit
+        run: make test
+
+      - name: Verify version consistency
+        run: |
+          if [ -f VERSION ]; then
+            VERSION=$(cat VERSION)
+            TAG_VERSION="${{ github.event.release.tag_name }}"
+            if [ "v${VERSION}" != "${TAG_VERSION}" ]; then
+              echo "Version mismatch: VERSION file has ${VERSION}, tag is ${TAG_VERSION}"
+              exit 1
+            fi
+            echo "Version consistency verified: ${VERSION}"
+          else
+            echo "No VERSION file found, skipping version check"
+          fi
+
+      - name: Create release notes
+        run: |
+          cat > release-notes.md << 'EOF'
+          ## Just-Common-Skills ${{ github.event.release.tag_name }}
+
+          ### 一键安装
+
+          ```bash
+          bash <(curl -fsSL https://raw.githubusercontent.com/qisd/just-common-skills/main/scripts/quick-install.sh)
+          ```
+
+          自动安装到 Claude Code、GitHub Copilot、Codex。
+
+          ### 包含内容
+
+          - 1 个编排器: `just-dev-pipeline`
+          - 7 个核心工作器: `just-plan-eng-review`, `just-qa`, `just-review`, `just-ship`, `just-document-release`, `just-investigate`, `just-careful`
+          - 7 个专用技能: CI/CD、部署、分析等
+          - 6 个 baseline 标准文档
+
+          ### 文档
+
+          - [README.md](https://github.com/${{ github.repository }}/blob/${{ github.event.release.tag_name }}/README.md)
+          - [快速开始](https://github.com/${{ github.repository }}/blob/${{ github.event.release.tag_name }}/docs/quickstart-new-project.md)
+          - [发布指南](https://github.com/${{ github.repository }}/blob/${{ github.event.release.tag_name }}/docs/RELEASE_GUIDE.md)
+
+          EOF
+
+          gh release edit "${{ github.event.release.tag_name }}" --notes-file release-notes.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Package skills
+        run: make package
+
+      - name: Upload package to release
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            dist/just-common-skills.zip \
+            --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Notify release completion
+        run: |
+          echo "✅ Release ${{ github.event.release.tag_name }} validated and published"
+          echo "📦 Skills count: $(find skills/just-* -maxdepth 0 -type d | wc -l)"
+          echo "📄 Baseline docs: $(find common-prompt/baseline/*.md | wc -l)"
+          echo "📦 Package: just-common-skills.zip uploaded"

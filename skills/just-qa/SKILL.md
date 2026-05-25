@@ -109,10 +109,46 @@ PASS | FAIL
 <1-3 lines>
 ~~~
 
+## Three-Question Design Test
+
+### Q1: What exact job does this skill perform?
+Execute post-implementation quality verification: run build/test commands, perform manual validation (including UI acceptance for mobile projects), fix blocking issues, and output structured evidence in `RUN_LOG.md` and screenshots.
+
+### Q2: When should it activate? List at least 5 trigger phrases.
+1. “run QA” or “run quality check”
+2. “verify the implementation” or “validate the changes”
+3. “test this” or “run tests and check”
+4. “check if it works” or “does it pass?”
+5. “QA this feature” or “quality assurance needed”
+
+### Q3: What does perfect output look like? Include one concrete output example.
+Perfect output includes: test result summary (PASS/FAIL), defect list with fixes, remaining risks, `RUN_LOG.md` with exact commands and exit codes, and for UI changes, annotated screenshots showing initial state, post-action state, and any error states with a clear verdict.
+
+Example:
+```
+## QA Result: PASS
+
+### Build & Test
+- Command: `flutter test`
+- Exit Code: 0
+- All 24 tests passed
+
+### UI Validation (Android Emulator)
+- Target: Login screen
+- Screenshots: ui/01-initial.png, ui/02-after-login.png
+- Findings: None
+- Verdict: PASS
+
+### Remaining Risks
+None identified.
+
+Evidence: doc/features/auth-flow/runs/task-01/RUN_LOG.md
+```
+
 ## Constraints
 
 - 测试失败不得忽略，必须处理或阻断。
-- 不允许“假通过”报告。
+- 不允许”假通过”报告。
 - 修复范围应限定在当前任务边界。
 - `RUN_LOG.md` 必须保留可复现命令与退出码。
 - 涉及 UI 改动时，截图与页面定位步骤不可省略。

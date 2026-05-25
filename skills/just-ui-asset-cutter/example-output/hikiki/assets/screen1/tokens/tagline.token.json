@@ -1,0 +1,9 @@
+{
+  "token_type": "text",
+  "component": "tagline",
+  "text": "快乐学习 每天进步",
+  "color": "#6B5A4E",
+  "fontSize_px": 16,
+  "fontWeight": "400",
+  "note": "Green leaf icons on left and right are separate decoration"
+}

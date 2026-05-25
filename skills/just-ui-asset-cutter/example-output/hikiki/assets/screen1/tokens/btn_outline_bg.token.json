@@ -1,0 +1,24 @@
+{
+  "token_type": "bg_reconstruct",
+  "component": "btn_outline",
+  "description": "手机号登录 - 描边按钮背景 (无需PNG，用代码重建)",
+  "fill": "transparent",
+  "border": "1.5px solid #52B84A",
+  "borderRadius": "9999px",
+  "width_px": 384,
+  "height_px": 65,
+  "interaction_states": {
+    "default": {
+      "fill": "transparent",
+      "border": "1.5px solid #52B84A"
+    },
+    "pressed": {
+      "fill": "rgba(82,184,74,0.08)",
+      "border": "1.5px solid #3D9A37"
+    },
+    "disabled": {
+      "fill": "transparent",
+      "border": "1.5px solid #BBBBBB"
+    }
+  }
+}

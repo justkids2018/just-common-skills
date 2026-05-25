@@ -44,6 +44,7 @@ Routing map (skill name -> file path):
 - Root cause analysis -> `.github/skills/just-investigate/SKILL.md`
 - Commit/PR/release handoff -> `.github/skills/just-ship/SKILL.md` and `.github/skills/just-document-release/SKILL.md`
 - High-risk operations safety -> `.github/skills/just-careful/SKILL.md`
+- Extract UI components from design image -> `.github/skills/just-ui-asset-cutter/SKILL.md`
 
 ## Keyword Trigger Hints
 
@@ -65,6 +66,8 @@ Use these phrases as strong routing signals in addition to semantic intent.
 	- Trigger words: 提交代码, 生成 PR, 发布版本, 发版收口, 发布文档同步
 - `just-careful`
 	- Trigger words: 删除, 覆盖, 回滚, 重置, force, down -v, 高风险操作
+- `just-ui-asset-cutter`
+	- Trigger words: 帮我切图, 把设计图拆成组件, 从图里提取按钮, 提取图标, 提取 UI 组件, 设计图转组件规格, 生成可复用 UI 资产, extract UI assets, 切图并生成 metadata
 
 ## Routing Priority
 

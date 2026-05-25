@@ -1,0 +1,9 @@
+{
+  "token_type": "text",
+  "component": "logo_text",
+  "text": "Hi Kiki",
+  "color": "#3D2210",
+  "fontSize_px": 64,
+  "fontWeight": "800",
+  "note": "Uses decorative PNG logo_hikiki.png for the leaf decorations"
+}

@@ -1,0 +1,24 @@
+{
+  "token_type": "bg_reconstruct",
+  "component": "btn_primary",
+  "description": "微信登录 - 主按钮背景 (无需PNG，用代码重建)",
+  "fill": "#52B84A",
+  "border": "none",
+  "borderRadius": "9999px",
+  "width_px": 384,
+  "height_px": 73,
+  "interaction_states": {
+    "default": {
+      "fill": "#52B84A",
+      "opacity": 1.0
+    },
+    "pressed": {
+      "fill": "#3D9A37",
+      "opacity": 1.0
+    },
+    "disabled": {
+      "fill": "#BBBBBB",
+      "opacity": 0.6
+    }
+  }
+}
