@@ -33,7 +33,7 @@
 ### Waza: Trilogy Structure
 ```
 Kaku (書く) - writes code
-Waza (技)   - drills habits  
+Waza (技)   - drills habits
 Kami (紙)   - ships documents
 ```
 
@@ -140,7 +140,7 @@ just-dev-pipeline (6 steps):
   6. Commit/PR + doc closure
 
 just-value-red-publish (4 gates):
-  Data collection → Framework analysis → Report generation → 
+  Data collection → Framework analysis → Report generation →
   XHS article + HTML card → Publish
   (User confirmation required at each gate)
 ```
