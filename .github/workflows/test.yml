@@ -67,9 +67,10 @@ jobs:
 
       - name: Check for trailing whitespace
         run: |
-          if git diff --check HEAD~1 2>/dev/null; then
+          # Check for trailing whitespace in modified files
+          if git diff --check origin/main...HEAD 2>/dev/null; then
             echo "No trailing whitespace found"
           else
-            echo "Found trailing whitespace"
+            echo "Found trailing whitespace in modified files"
             exit 1
           fi
