@@ -1,0 +1,10 @@
+{
+  "token_type": "text",
+  "component": "btn_primary_label",
+  "text": "微信登录",
+  "i18n_key": "login.wechat_login",
+  "color": "#FFFFFF",
+  "fontSize_px": 17,
+  "fontWeight": "600",
+  "letterSpacing": "0px"
+}

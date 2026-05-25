@@ -1,4 +1,4 @@
-.PHONY: test validate-skills validate-baseline validate-scripts check-symlinks help
+.PHONY: test validate-skills validate-baseline validate-scripts check-symlinks package help
 
 # Default target
 help:
@@ -10,6 +10,7 @@ help:
 	@echo "  make validate-baseline - Check baseline documentation"
 	@echo "  make validate-scripts  - Verify scripts are executable and have no syntax errors"
 	@echo "  make check-symlinks    - Find broken symlinks"
+	@echo "  make package           - Create distributable zip package"
 	@echo "  make install           - Install skills globally"
 	@echo "  make uninstall         - Uninstall skills globally"
 	@echo ""
@@ -70,3 +71,7 @@ install:
 # Uninstall skills globally
 uninstall:
 	@./scripts/uninstall-skills.sh
+
+# Create distributable package
+package:
+	@./scripts/package-skill.sh

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hi Kiki — UI Asset Preview (Real Cuts)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F0EAE0; color: #2D1F14; padding: 24px; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #7A6A62; margin-bottom: 32px; }
+    .section { background: #fff; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+    .section-title { font-size: 15px; font-weight: 700; color: #3D2B1F; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #EEE6DA; display:flex; align-items:center; gap:8px; }
+    .screen-badge { font-size:11px; font-weight:600; background:#52B84A; color:#fff; border-radius:20px; padding:2px 8px; }
+    .preview-row { display:grid; grid-template-columns:auto 1fr; gap:28px; align-items:start; }
+    .ref-label { font-size:11px; color:#9A8A82; margin-bottom:6px; text-align:center; }
+    .ref-img { display:block; height:340px; width:auto; border-radius:10px; border:1px solid #E0D9CE; background:#EDE3D3; }
+    .cuts-grid { display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; }
+    .cut-card { background:#F5EFE5; border:1px solid #E0D9CE; border-radius:10px; padding:10px; display:flex; flex-direction:column; align-items:center; gap:8px; min-width:90px; }
+    .cut-img-wrap { background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 10px 10px; border-radius:6px; padding:4px; display:flex; align-items:center; justify-content:center; }
+    .cut-card img { display:block; max-width:200px; max-height:90px; object-fit:contain; }
+    .cut-card.menu-row img { max-width:320px; max-height:60px; }
+    .cut-label { font-size:11px; color:#7A6A62; text-align:center; word-break:break-all; }
+    .cut-label code { font-size:10px; background:#E8E0D0; border-radius:3px; padding:1px 4px; display:block; margin-top:3px; }
+    .alpha-badge { font-size:9px; background:#4BADF5; color:#fff; border-radius:20px; padding:1px 5px; }
+    .reconstruct-badge { font-size:9px; background:#F5C518; color:#3D2B1F; border-radius:20px; padding:1px 5px; }
+    .text-badge { font-size:9px; background:#9E9E9E; color:#fff; border-radius:20px; padding:1px 5px; }
+    .layer-stack { margin-top:16px; border-top:1px dashed #DDD6CC; padding-top:14px; }
+    .layer-stack-title { font-size:12px; font-weight:600; color:#7A6A62; margin-bottom:10px; }
+    .layers { display:flex; flex-direction:column; gap:6px; }
+    .layer-row { display:flex; align-items:center; gap:10px; font-size:12px; padding:6px 10px; background:#F5EFE5; border-radius:6px; }
+    .layer-num { font-size:11px; font-weight:700; color:#9A8A82; min-width:20px; }
+    .layer-swatch { width:28px; height:28px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; font-weight:700; flex-shrink:0; }
+    .layer-info { flex:1; }
+    .layer-name { font-weight:600; color:#2D1F14; }
+    .layer-desc { color:#9A8A82; font-size:11px; margin-top:1px; }
+    .menu-section { display:flex; flex-direction:column; gap:12px; margin-top:12px; }
+    .menu-row-wrap { display:flex; align-items:center; gap:12px; }
+    .json-section { background:#1E1E1E; border-radius:14px; padding:20px 24px; margin-bottom:24px; }
+    .json-title { font-size:13px; color:#9CDCFE; margin-bottom:12px; font-family:monospace; }
+    pre { font-family:'Fira Code',monospace; font-size:11.5px; color:#CE9178; white-space:pre-wrap; word-break:break-all; max-height:360px; overflow-y:auto; line-height:1.6; }
+    .file-tree { font-family:'Fira Code',monospace; font-size:12px; background:#F5EFE5; border-radius:8px; padding:14px 16px; line-height:1.8; margin-top:8px; color:#3D2B1F; }
+    .file-tree .dir { color:#52B84A; font-weight:700; }
+    .file-tree .file { color:#4BADF5; }
+    .file-tree .note { color:#9A8A82; font-size:11px; }
+    /* atomic layer styles */
+    .atomic-section { margin-top:4px; }
+    .atomic-group-title { font-size:13px; font-weight:700; color:#52B84A; margin:16px 0 10px; display:flex; align-items:center; gap:6px; }
+    .atomic-group-title::before { content:''; display:inline-block; width:3px; height:14px; background:#52B84A; border-radius:2px; }
+    .token-card { background:#1E1E1E; border-radius:8px; padding:10px 12px; min-width:200px; max-width:280px; }
+    .token-card-title { font-size:10px; color:#9CDCFE; font-family:monospace; margin-bottom:6px; }
+    .token-field { font-size:11px; font-family:monospace; color:#CE9178; line-height:1.7; }
+    .token-key { color:#9CDCFE; }
+    .token-val { color:#CE9178; }
+    .token-val.green { color:#4EC9B0; }
+    .illus-badge { font-size:9px; background:#A04BF5; color:#fff; border-radius:20px; padding:1px 5px; }
+    .btn-section { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px; }
+    .btn-atomic-card { background:#F5EFE5; border:1px solid #DDD6CC; border-radius:10px; padding:12px; }
+    .btn-atomic-title { font-size:12px; font-weight:700; color:#3D2B1F; margin-bottom:10px; padding-bottom:8px; border-bottom:1px dashed #DDD6CC; }
+  </style>
+</head>
+<body>
+
+<h1>Hi Kiki &mdash; UI Asset Preview</h1>
+<p class="subtitle">原子层切图预览 &middot; button = bg_token + icon.png + label_token &middot; 文字层为 token，不是图片</p>
+
+<!-- S1 -->
+<div class="section">
+  <div class="section-title"><span class="screen-badge">S1</span> 欢迎页 screen1_welcome <span style="font-size:11px;font-weight:400;color:#52B84A;margin-left:8px;">&#10003; 原子层切图完成</span></div>
+  <div class="preview-row">
+    <!-- 左列：参考截图 -->
+    <div>
+      <div class="ref-label">原始设计参考</div>
+      <img class="ref-img" src="../assets/screen1/bg/scene_illustration.png" alt="screen1 illustration" style="height:310px;">
+      <div class="ref-label" style="margin-top:8px;">插图区域 512×622</div>
+    </div>
+    <!-- 右列：原子产物 -->
+    <div class="atomic-section">
+
+      <!-- 插图资产 -->
+      <div class="atomic-group-title">插图资产（Illustrations）</div>
+      <div class="cuts-grid">
+        <div class="cut-card">
+          <div class="cut-img-wrap"><img src="../assets/screen1/illustrations/logo_hikiki.png" alt="logo hikiki"></div>
+          <div class="cut-label"><span class="alpha-badge">&#945;透明</span> Hi Kiki 品牌标志<code>illustrations/logo_hikiki.png</code><code>260×100 px</code></div>
+        </div>
+        <div class="cut-card">
+          <div class="cut-img-wrap" style="background:#FEEBCA;"><img src="../assets/screen1/illustrations/illus_kids.png" alt="kids" style="max-width:220px;max-height:100px;"></div>
+          <div class="cut-label"><span class="illus-badge">插图</span> 角色插图（含背景）<code>illustrations/illus_kids.png</code><code>442×375 px</code></div>
+        </div>
+        <div class="cut-card">
+          <div class="cut-img-wrap"><img src="../assets/screen1/illustrations/illus_bushes_bottom.png" alt="bushes" style="max-width:280px;max-height:80px;"></div>
+          <div class="cut-label"><span class="alpha-badge">&#945;透明</span> 底部绿色灌木<code>illustrations/illus_bushes_bottom.png</code><code>512×120 px</code></div>
+        </div>
+      </div>
+
+      <!-- 按钮原子层 -->
+      <div class="atomic-group-title">按钮原子层（Button Atomic Layers）</div>
+      <div class="btn-section">
+        <!-- 主按钮 -->
+        <div class="btn-atomic-card">
+          <div class="btn-atomic-title">btn_wechat_login &nbsp;<span style="font-size:10px;color:#9A8A82;font-weight:400;">微信登录 · 主按钮</span></div>
+          <div class="layers">
+            <div class="layer-row">
+              <span class="layer-num">1</span>
+              <div class="layer-swatch" style="background:#52B84A;border-radius:9999px;">Bg</div>
+              <div class="layer-info"><div class="layer-name">bg &mdash; token</div><div class="layer-desc">fill:#52B84A · pill · 384×73px</div></div>
+              <span class="reconstruct-badge">token only</span>
+            </div>
+            <div class="layer-row">
+              <span class="layer-num">2</span>
+              <div class="layer-swatch" style="background:#52B84A;"><img src="../assets/screen1/buttons/icon_wechat.png" alt="wechat" style="width:22px;height:22px;object-fit:contain;"></div>
+              <div class="layer-info"><div class="layer-name">icon &mdash; PNG</div><div class="layer-desc">白色微信logo，透明bg · 93×66px</div></div>
+              <span class="alpha-badge">&#945;透明</span>
+            </div>
+            <div class="layer-row">
+              <span class="layer-num">3</span>
+              <div class="layer-swatch" style="background:#666;">Aa</div>
+              <div class="layer-info"><div class="layer-name">label &mdash; token</div><div class="layer-desc">微信登录 · #FFFFFF · 17px 600</div></div>
+              <span class="text-badge">token only</span>
+            </div>
+          </div>
+        </div>
+        <!-- 次按钮 -->
+        <div class="btn-atomic-card">
+          <div class="btn-atomic-title">btn_phone_login &nbsp;<span style="font-size:10px;color:#9A8A82;font-weight:400;">手机号登录 · 描边按钮</span></div>
+          <div class="layers">
+            <div class="layer-row">
+              <span class="layer-num">1</span>
+              <div class="layer-swatch" style="background:transparent;border:2px solid #52B84A;border-radius:9999px;"></div>
+              <div class="layer-info"><div class="layer-name">bg &mdash; token</div><div class="layer-desc">transparent · 1.5px solid #52B84A · pill</div></div>
+              <span class="reconstruct-badge">token only</span>
+            </div>
+            <div class="layer-row">
+              <span class="layer-num">2</span>
+              <div class="layer-swatch" style="background:#EEE;"><img src="../assets/screen1/buttons/icon_phone.png" alt="phone" style="width:22px;height:22px;object-fit:contain;"></div>
+              <div class="layer-info"><div class="layer-name">icon &mdash; PNG</div><div class="layer-desc">绿色电话图标，透明bg · 72×56px</div></div>
+              <span class="alpha-badge">&#945;透明</span>
+            </div>
+            <div class="layer-row">
+              <span class="layer-num">3</span>
+              <div class="layer-swatch" style="background:#52B84A;">Aa</div>
+              <div class="layer-info"><div class="layer-name">label &mdash; token</div><div class="layer-desc">手机号登录 · #52B84A · 17px 500</div></div>
+              <span class="text-badge">token only</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Token JSON 展示 -->
+      <div class="atomic-group-title">Design Tokens（JSON 示例）</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div class="token-card">
+          <div class="token-card-title">// btn_primary_bg.token.json</div>
+          <div class="token-field">
+            <span class="token-key">"fill"</span>: <span class="token-val">"#52B84A"</span>,<br>
+            <span class="token-key">"borderRadius"</span>: <span class="token-val">"9999px"</span>,<br>
+            <span class="token-key">"width_px"</span>: <span class="token-val green">384</span>,<br>
+            <span class="token-key">"height_px"</span>: <span class="token-val green">73</span>
+          </div>
+        </div>
+        <div class="token-card">
+          <div class="token-card-title">// label_wechat_login.token.json</div>
+          <div class="token-field">
+            <span class="token-key">"text"</span>: <span class="token-val">"微信登录"</span>,<br>
+            <span class="token-key">"color"</span>: <span class="token-val">"#FFFFFF"</span>,<br>
+            <span class="token-key">"fontSize_px"</span>: <span class="token-val green">17</span>,<br>
+            <span class="token-key">"fontWeight"</span>: <span class="token-val">"600"</span>
+          </div>
+        </div>
+        <div class="token-card">
+          <div class="token-card-title">// btn_outline_bg.token.json</div>
+          <div class="token-field">
+            <span class="token-key">"fill"</span>: <span class="token-val">"transparent"</span>,<br>
+            <span class="token-key">"border"</span>: <span class="token-val">"1.5px solid #52B84A"</span>,<br>
+            <span class="token-key">"borderRadius"</span>: <span class="token-val">"9999px"</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- S2 -->
+<div class="section">
+  <div class="section-title"><span class="screen-badge">S2</span> &#x767B;&#x5F55;&#x9875; screen2_login</div>
+  <div class="preview-row">
+    <div>
+      <div class="ref-label">&#x539F;&#x59CB;&#x8BBE;&#x8BA1;&#x53C2;&#x8003;</div>
+      <img class="ref-img" src="../assets/backgrounds/screen2_login_bg.png" alt="screen2">
+    </div>
+    <div>
+      <div class="cuts-grid">
+        <div class="cut-card">
+          <div class="cut-img-wrap"><img src="../assets/inputs/screen2_form_area.png" alt="form" style="max-width:220px;max-height:120px;"></div>
+          <div class="cut-label">&#x8868;&#x5355;&#x533A;&#x57DF;&#xFF08;&#x53C2;&#x8003;&#x88C1;&#x5207;&#xFF09;<code>inputs/screen2_form_area.png</code></div>
+        </div>
+        <div class="cut-card">
+          <div class="cut-img-wrap"><img src="../assets/buttons/btn_login_full.png" alt="login full"></div>
+          <div class="cut-label">&#x767B;&#x5F55;&#x6309;&#x9215;&#xFF08;&#x5B8C;&#x6574;&#xFF09;<code>buttons/btn_login_full.png</code></div>
+        </div>
+        <div class="cut-card">
+          <div class="cut-img-wrap"><img src="../assets/buttons/btn_login_bg.png" alt="login bg"></div>
+          <div class="cut-label"><span class="alpha-badge">&#945;&#x900F;&#x660E;</span> &#x767B;&#x5F55;&#x6309;&#x9215;&#x80CC;&#x666F;<code>buttons/btn_login_bg.png</code></div>
+        </div>
+      </div>
+      <div class="layer-stack">
+        <div class="layer-stack-title">&#x8F93;&#x5165;&#x6846;&#x5C42;&#x5206;&#x89E3;&#xFF08;token &#x63CF;&#x8FF0;&#xFF0C;&#x4E0D;&#x662F;&#x56FE;&#x7247;&#xFF09;</div>
+        <div class="layers">
+          <div class="layer-row">
+            <span class="layer-num">1</span>
+            <div class="layer-swatch" style="background:#E8E0D0;border:1px solid #C0B8A8;"></div>
+            <div class="layer-info"><div class="layer-name">phone_input</div><div class="layer-desc">icon: phone &middot; placeholder: i18n[input_phone_hint]</div></div>
+            <span class="reconstruct-badge">reconstruct token</span>
+          </div>
+          <div class="layer-row">
+            <span class="layer-num">2</span>
+            <div class="layer-swatch" style="background:#E8E0D0;border:1px solid #C0B8A8;"></div>
+            <div class="layer-info"><div class="layer-name">password_input</div><div class="layer-desc">icon: lock &middot; trailing: eye_toggle &middot; placeholder: i18n[input_password_hint]</div></div>
+            <span class="reconstruct-badge">reconstruct token</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S3 -->
+<div class="section">
+  <div class="section-title"><span class="screen-badge">S3</span> &#x4E2A;&#x4EBA;&#x4E2D;&#x5FC3; screen3_profile</div>
+  <div class="preview-row">
+    <div>
+      <div class="ref-label">&#x539F;&#x59CB;&#x8BBE;&#x8BA1;&#x53C2;&#x8003;</div>
+      <img class="ref-img" src="../assets/backgrounds/screen3_profile_bg.png" alt="screen3">
+    </div>
+    <div>
+      <div class="cuts-grid" style="margin-bottom:20px;">
+        <div class="cut-card">
+          <div class="cut-img-wrap"><img src="../assets/icons/avatar_area.png" alt="avatar" style="max-width:180px;max-height:100px;"></div>
+          <div class="cut-label">&#x5934;&#x50CF;&#x533A;&#x57DF;<code>icons/avatar_area.png</code></div>
+        </div>
+        <div class="cut-card">
+          <div class="cut-img-wrap"><img src="../assets/progress/xp_bar_area.png" alt="xp" style="max-width:260px;max-height:40px;"></div>
+          <div class="cut-label">&#x7ECF;&#x9A8C;&#x5024;&#x8FDB;&#x5EA6;&#x6761;<code>progress/xp_bar_area.png</code></div>
+        </div>
+      </div>
+
+      <div class="layer-stack-title">&#x83DC;&#x5355;&#x9879;&#x88C1;&#x5207;&#xFF08;&#x6574;&#x884C; + &#x56FE;&#x6807;&#x6846;&#xFF09;</div>
+      <div class="menu-section">
+        <div class="menu-row-wrap">
+          <div class="cut-card" style="min-width:60px;">
+            <div class="cut-img-wrap"><img src="../assets/icons/icon_box_user.png" alt="icon user" style="max-width:42px;max-height:42px;"></div>
+            <div class="cut-label"><span class="alpha-badge">&#945;</span><code>icon_box_user</code></div>
+          </div>
+          <div class="cut-card menu-row" style="flex:1;">
+            <div class="cut-img-wrap" style="width:100%;"><img src="../assets/menu/menu_item_user.png" alt="menu user" style="max-width:100%;"></div>
+            <div class="cut-label">&#x6211;&#x7684;&#x4FE1;&#x606F; <code>menu/menu_item_user.png</code></div>
+          </div>
+        </div>
+        <div class="menu-row-wrap">
+          <div class="cut-card" style="min-width:60px;">
+            <div class="cut-img-wrap"><img src="../assets/icons/icon_box_shield.png" alt="icon shield" style="max-width:42px;max-height:42px;"></div>
+            <div class="cut-label"><span class="alpha-badge">&#945;</span><code>icon_box_shield</code></div>
+          </div>
+          <div class="cut-card menu-row" style="flex:1;">
+            <div class="cut-img-wrap" style="width:100%;"><img src="../assets/menu/menu_item_shield.png" alt="menu shield" style="max-width:100%;"></div>
+            <div class="cut-label">&#x8D26;&#x53F7;&#x4E0E;&#x5B89;&#x5168; <code>menu/menu_item_shield.png</code></div>
+          </div>
+        </div>
+        <div class="menu-row-wrap">
+          <div class="cut-card" style="min-width:60px;">
+            <div class="cut-img-wrap"><img src="../assets/icons/icon_box_bell.png" alt="icon bell" style="max-width:42px;max-height:42px;"></div>
+            <div class="cut-label"><span class="alpha-badge">&#945;</span><code>icon_box_bell</code></div>
+          </div>
+          <div class="cut-card menu-row" style="flex:1;">
+            <div class="cut-img-wrap" style="width:100%;"><img src="../assets/menu/menu_item_bell.png" alt="menu bell" style="max-width:100%;"></div>
+            <div class="cut-label">&#x6D88;&#x606F;&#x901A;&#x77E5; <code>menu/menu_item_bell.png</code></div>
+          </div>
+        </div>
+        <div class="menu-row-wrap">
+          <div class="cut-card" style="min-width:60px;">
+            <div class="cut-img-wrap"><img src="../assets/icons/icon_box_help.png" alt="icon help" style="max-width:42px;max-height:42px;"></div>
+            <div class="cut-label"><span class="alpha-badge">&#945;</span><code>icon_box_help</code></div>
+          </div>
+          <div class="cut-card menu-row" style="flex:1;">
+            <div class="cut-img-wrap" style="width:100%;"><img src="../assets/menu/menu_item_help.png" alt="menu help" style="max-width:100%;"></div>
+            <div class="cut-label">&#x5E2E;&#x52A9;&#x4E0E;&#x53CD;&#x9988; <code>menu/menu_item_help.png</code></div>
+          </div>
+        </div>
+        <div class="menu-row-wrap">
+          <div class="cut-card" style="min-width:60px;">
+            <div class="cut-img-wrap"><img src="../assets/icons/icon_box_heart.png" alt="icon heart" style="max-width:42px;max-height:42px;"></div>
+            <div class="cut-label"><span class="alpha-badge">&#945;</span><code>icon_box_heart</code></div>
+          </div>
+          <div class="cut-card menu-row" style="flex:1;">
+            <div class="cut-img-wrap" style="width:100%;"><img src="../assets/menu/menu_item_heart.png" alt="menu heart" style="max-width:100%;"></div>
+            <div class="cut-label">&#x5173;&#x4E8E;&#x6211;&#x4EEC; <code>menu/menu_item_heart.png</code></div>
+          </div>
+        </div>
+        <div class="menu-row-wrap">
+          <div class="cut-card" style="min-width:60px;">
+            <div class="cut-img-wrap"><img src="../assets/icons/icon_box_logout.png" alt="icon logout" style="max-width:42px;max-height:42px;"></div>
+            <div class="cut-label"><span class="alpha-badge">&#945;</span><code>icon_box_logout</code></div>
+          </div>
+          <div class="cut-card menu-row" style="flex:1;">
+            <div class="cut-img-wrap" style="width:100%;"><img src="../assets/menu/menu_item_logout.png" alt="menu logout" style="max-width:100%;"></div>
+            <div class="cut-label">&#x9000;&#x51FA;&#x767B;&#x5F55; <code>menu/menu_item_logout.png</code></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- File Tree -->
+<div class="section">
+  <div class="section-title">产物文件树</div>
+  <div class="file-tree">
+<span class="dir">hikiki/</span><br>
+├── <span class="file">ui-manifest.json</span>  <span class="note">← 所有组件的结构描述（screen1 已更新为原子层）</span><br>
+├── <span class="dir">preview/</span><br>
+│   └── <span class="file">index.html</span>  <span class="note">← 本文件（原子层验证页）</span><br>
+└── <span class="dir">assets/</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="dir">screen1/</span>  <span class="note">← ✓ 已完成原子切图</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dir">bg/</span>  <span class="note">← scene_full.png (512×1024) · scene_illustration.png (512×622)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dir">illustrations/</span>  <span class="note">← logo_hikiki.png · illus_kids.png · illus_bushes_bottom.png</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="dir">buttons/</span>  <span class="note">← icon_wechat.png (α) · icon_phone.png (α)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="dir">tokens/</span>  <span class="note">← 6个 .token.json（bg + label × 2按钮，logo文字，tagline）</span><br>
+  </div>
+</div>
+
+<!-- JSON manifest embed -->
+<div class="json-section">
+  <div class="json-title">// ui-manifest.json (embedded)</div>
+  <pre id="manifest-out"></pre>
+</div>
+
+<script type="application/json" id="ui-manifest">
+{"source":"kiki_login.png","dimensions":{"width":1536,"height":1024},"screens":{"screen1_welcome":{"label":"欢迎页","file":"assets/backgrounds/screen1_welcome_bg.png","components":{"primary_button":{"layers":[{"id":"bg","type":"shape","file":"assets/buttons/btn_primary_bg.png","reconstruct":{"fill":"#52B84A","borderRadius":"9999px","width":"384px","height":"78px"}},{"id":"label","type":"text","color":"#FFFFFF","fontSize":17,"i18n_key":"btn_wechat_login"}]},"outline_button":{"layers":[{"id":"bg","type":"shape","file":"assets/buttons/btn_outline_bg.png","reconstruct":{"fill":"transparent","border":"1.5px solid #52B84A","borderRadius":"9999px"}},{"id":"label","type":"text","color":"#52B84A","fontSize":17,"i18n_key":"btn_phone_login"}]}}},"screen2_login":{"label":"登录页","file":"assets/backgrounds/screen2_login_bg.png","components":{"phone_input":{"type":"input","reconstruct":{"icon":"phone","i18n_key":"input_phone_hint"}},"password_input":{"type":"input","reconstruct":{"icon":"lock","i18n_key":"input_password_hint","trailing_icon":"eye_toggle"}},"login_button":{"layers":[{"id":"bg","type":"shape","file":"assets/buttons/btn_login_bg.png","reconstruct":{"fill":"#52B84A","borderRadius":"9999px","width":"390px","height":"73px"}},{"id":"label","type":"text","color":"#FFFFFF","fontSize":17,"i18n_key":"btn_login"}]}}},"screen3_profile":{"label":"个人中心","file":"assets/backgrounds/screen3_profile_bg.png","components":{"avatar":{"file":"assets/icons/avatar_area.png"},"xp_bar":{"file":"assets/progress/xp_bar_area.png","reconstruct":{"fill":"#52B84A","trackFill":"#E8E0D0","width_percent":35}},"menu_user":{"file":"assets/menu/menu_item_user.png","icon":"assets/icons/icon_box_user.png","label_i18n":"menu_my_info"},"menu_shield":{"file":"assets/menu/menu_item_shield.png","icon":"assets/icons/icon_box_shield.png","label_i18n":"menu_account_security"},"menu_bell":{"file":"assets/menu/menu_item_bell.png","icon":"assets/icons/icon_box_bell.png","label_i18n":"menu_notifications"},"menu_help":{"file":"assets/menu/menu_item_help.png","icon":"assets/icons/icon_box_help.png","label_i18n":"menu_help_feedback"},"menu_heart":{"file":"assets/menu/menu_item_heart.png","icon":"assets/icons/icon_box_heart.png","label_i18n":"menu_about"},"menu_logout":{"file":"assets/menu/menu_item_logout.png","icon":"assets/icons/icon_box_logout.png","label_i18n":"menu_logout"}}}}}
+</script>
+<script>
+  try {
+    const raw = document.getElementById('ui-manifest').textContent;
+    const obj = JSON.parse(raw);
+    document.getElementById('manifest-out').textContent = JSON.stringify(obj, null, 2);
+  } catch(e) { document.getElementById('manifest-out').textContent = e.toString(); }
+</script>
+
+</body>
+</html>

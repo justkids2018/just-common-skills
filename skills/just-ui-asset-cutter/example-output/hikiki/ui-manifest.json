@@ -1,0 +1,406 @@
+{
+    "source": "kiki_login.png",
+    "dimensions": {
+        "width": 1536,
+        "height": 1024
+    },
+    "_note": "screen1_welcome 已完成原子层切图（v2）。screen2/screen3 为待处理占位结构。",
+    "screens": {
+        "screen1_welcome": {
+            "label": "欢迎页",
+            "status": "done",
+            "bounds": {
+                "x": 0,
+                "y": 0,
+                "w": 512,
+                "h": 1024
+            },
+            "backgrounds": [
+                {
+                    "id": "scene_full",
+                    "desc": "全屏截图（含插图+按钮+底部装饰）",
+                    "file": "assets/screen1/bg/scene_full.png",
+                    "bounds": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 512,
+                        "h": 1024
+                    },
+                    "usage": "reference_only"
+                },
+                {
+                    "id": "scene_illustration",
+                    "desc": "插图区域（角色+背景，不含按钮）",
+                    "file": "assets/screen1/bg/scene_illustration.png",
+                    "bounds": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 512,
+                        "h": 622
+                    },
+                    "usage": "illustration_bg"
+                }
+            ],
+            "illustrations": [
+                {
+                    "id": "logo_hikiki",
+                    "desc": "Hi Kiki 品牌标志（wordmark + 绿叶，透明背景）",
+                    "file": "assets/screen1/illustrations/logo_hikiki.png",
+                    "bounds_in_screen": {
+                        "x": 122,
+                        "y": 120,
+                        "w": 260,
+                        "h": 100
+                    },
+                    "bg_removed": true
+                },
+                {
+                    "id": "illus_kids",
+                    "desc": "两个卡通儿童角色（含课室背景，背景未去除）",
+                    "file": "assets/screen1/illustrations/illus_kids.png",
+                    "bounds_in_screen": {
+                        "x": 18,
+                        "y": 190,
+                        "w": 442,
+                        "h": 375
+                    },
+                    "bg_removed": false,
+                    "note": "人物与背景深度混合，无法无损去背"
+                },
+                {
+                    "id": "illus_bushes_bottom",
+                    "desc": "底部绿色灌木装饰（透明背景）",
+                    "file": "assets/screen1/illustrations/illus_bushes_bottom.png",
+                    "bounds_in_screen": {
+                        "x": 0,
+                        "y": 828,
+                        "w": 512,
+                        "h": 120
+                    },
+                    "bg_removed": true
+                }
+            ],
+            "components": {
+                "btn_wechat_login": {
+                    "label": "微信登录（绿色主按钮）",
+                    "bounds_in_screen": {
+                        "x": 78,
+                        "y": 623,
+                        "w": 384,
+                        "h": 73
+                    },
+                    "atomic_layers": [
+                        {
+                            "id": "bg",
+                            "type": "token",
+                            "file": "assets/screen1/tokens/btn_primary_bg.token.json",
+                            "note": "实色背景用 token 描述，无需 PNG"
+                        },
+                        {
+                            "id": "icon",
+                            "type": "png",
+                            "file": "assets/screen1/buttons/icon_wechat.png",
+                            "desc": "白色微信 logo，透明背景",
+                            "size": {
+                                "w": 93,
+                                "h": 66
+                            }
+                        },
+                        {
+                            "id": "label",
+                            "type": "token",
+                            "file": "assets/screen1/tokens/label_wechat_login.token.json",
+                            "note": "普通字体文字用 token 描述，无需 PNG"
+                        }
+                    ]
+                },
+                "btn_phone_login": {
+                    "label": "手机号登录（描边次要按钮）",
+                    "bounds_in_screen": {
+                        "x": 78,
+                        "y": 715,
+                        "w": 384,
+                        "h": 65
+                    },
+                    "atomic_layers": [
+                        {
+                            "id": "bg",
+                            "type": "token",
+                            "file": "assets/screen1/tokens/btn_outline_bg.token.json",
+                            "note": "透明底+绿色描边，用 token 描述"
+                        },
+                        {
+                            "id": "icon",
+                            "type": "png",
+                            "file": "assets/screen1/buttons/icon_phone.png",
+                            "desc": "绿色电话图标，透明背景",
+                            "size": {
+                                "w": 72,
+                                "h": 56
+                            }
+                        },
+                        {
+                            "id": "label",
+                            "type": "token",
+                            "file": "assets/screen1/tokens/label_phone_login.token.json",
+                            "note": "普通字体文字用 token 描述"
+                        }
+                    ]
+                }
+            },
+            "tokens": [
+                "assets/screen1/tokens/btn_primary_bg.token.json",
+                "assets/screen1/tokens/btn_outline_bg.token.json",
+                "assets/screen1/tokens/label_wechat_login.token.json",
+                "assets/screen1/tokens/label_phone_login.token.json",
+                "assets/screen1/tokens/logo_hikiki_text.token.json",
+                "assets/screen1/tokens/tagline.token.json"
+            ]
+        },
+        "screen2_login": {
+            "label": "登录 / 注册页",
+            "bounds": {
+                "x": 512,
+                "y": 0,
+                "w": 512,
+                "h": 1024
+            },
+            "file": "assets/backgrounds/screen2_login_bg.png",
+            "components": {
+                "form_area": {
+                    "label": "表单区域",
+                    "bounds_in_screen": {
+                        "x": 8,
+                        "y": 90,
+                        "w": 490,
+                        "h": 470
+                    },
+                    "file": "assets/inputs/screen2_form_area.png",
+                    "layers": [
+                        {
+                            "id": "phone_input",
+                            "type": "input",
+                            "file": null,
+                            "reconstruct": {
+                                "placeholder_i18n_key": "input_phone_hint",
+                                "icon": "phone",
+                                "borderBottom": "1px solid #E0D9CE"
+                            }
+                        },
+                        {
+                            "id": "password_input",
+                            "type": "input",
+                            "file": null,
+                            "reconstruct": {
+                                "placeholder_i18n_key": "input_password_hint",
+                                "icon": "lock",
+                                "trailing_icon": "eye_toggle",
+                                "borderBottom": "1px solid #E0D9CE"
+                            }
+                        }
+                    ]
+                },
+                "login_button": {
+                    "label": "登录按钮",
+                    "bounds": {
+                        "x": 580,
+                        "y": 572,
+                        "w": 390,
+                        "h": 73
+                    },
+                    "layers": [
+                        {
+                            "id": "bg",
+                            "type": "shape",
+                            "file": "assets/buttons/btn_login_bg.png",
+                            "reconstruct": {
+                                "fill": "#52B84A",
+                                "borderRadius": "9999px",
+                                "width": "390px",
+                                "height": "73px"
+                            }
+                        },
+                        {
+                            "id": "label",
+                            "type": "text",
+                            "file": null,
+                            "color": "#FFFFFF",
+                            "fontSize": 17,
+                            "fontWeight": "600",
+                            "i18n_key": "btn_login"
+                        }
+                    ]
+                }
+            }
+        },
+        "screen3_profile": {
+            "label": "个人中心",
+            "bounds": {
+                "x": 1024,
+                "y": 0,
+                "w": 512,
+                "h": 1024
+            },
+            "file": "assets/backgrounds/screen3_profile_bg.png",
+            "components": {
+                "avatar": {
+                    "label": "头像区域",
+                    "bounds": {
+                        "x": 1150,
+                        "y": 120,
+                        "w": 240,
+                        "h": 190
+                    },
+                    "file": "assets/icons/avatar_area.png",
+                    "layers": [
+                        {
+                            "id": "avatar_img",
+                            "type": "image",
+                            "file": "assets/icons/avatar_area.png"
+                        }
+                    ]
+                },
+                "xp_bar": {
+                    "label": "经验值进度条",
+                    "bounds": {
+                        "x": 1100,
+                        "y": 290,
+                        "w": 360,
+                        "h": 25
+                    },
+                    "file": "assets/progress/xp_bar_area.png",
+                    "layers": [
+                        {
+                            "id": "track",
+                            "type": "shape",
+                            "file": null,
+                            "reconstruct": {
+                                "fill": "#E8E0D0",
+                                "borderRadius": "9999px",
+                                "height": "12px"
+                            }
+                        },
+                        {
+                            "id": "fill",
+                            "type": "shape",
+                            "file": null,
+                            "reconstruct": {
+                                "fill": "#52B84A",
+                                "borderRadius": "9999px",
+                                "height": "12px",
+                                "width_percent": 35
+                            }
+                        }
+                    ]
+                },
+                "menu_list": {
+                    "label": "设置菜单",
+                    "items": [
+                        {
+                            "id": "menu_user",
+                            "label_i18n_key": "menu_my_info",
+                            "label": "我的信息",
+                            "bounds": {
+                                "x": 1035,
+                                "y": 358,
+                                "w": 475,
+                                "h": 60
+                            },
+                            "file": "assets/menu/menu_item_user.png",
+                            "icon_box": {
+                                "file": "assets/icons/icon_box_user.png",
+                                "color": "#7EC24B",
+                                "icon": "user"
+                            }
+                        },
+                        {
+                            "id": "menu_shield",
+                            "label_i18n_key": "menu_account_security",
+                            "label": "账号与安全",
+                            "bounds": {
+                                "x": 1035,
+                                "y": 425,
+                                "w": 475,
+                                "h": 60
+                            },
+                            "file": "assets/menu/menu_item_shield.png",
+                            "icon_box": {
+                                "file": "assets/icons/icon_box_shield.png",
+                                "color": "#F5C518",
+                                "icon": "shield"
+                            }
+                        },
+                        {
+                            "id": "menu_bell",
+                            "label_i18n_key": "menu_notifications",
+                            "label": "消息通知",
+                            "bounds": {
+                                "x": 1035,
+                                "y": 492,
+                                "w": 475,
+                                "h": 60
+                            },
+                            "file": "assets/menu/menu_item_bell.png",
+                            "icon_box": {
+                                "file": "assets/icons/icon_box_bell.png",
+                                "color": "#4BADF5",
+                                "icon": "bell"
+                            }
+                        },
+                        {
+                            "id": "menu_help",
+                            "label_i18n_key": "menu_help_feedback",
+                            "label": "帮助与反馈",
+                            "bounds": {
+                                "x": 1035,
+                                "y": 559,
+                                "w": 475,
+                                "h": 60
+                            },
+                            "file": "assets/menu/menu_item_help.png",
+                            "icon_box": {
+                                "file": "assets/icons/icon_box_help.png",
+                                "color": "#A04BF5",
+                                "icon": "help"
+                            }
+                        },
+                        {
+                            "id": "menu_heart",
+                            "label_i18n_key": "menu_about",
+                            "label": "关于我们",
+                            "bounds": {
+                                "x": 1035,
+                                "y": 626,
+                                "w": 475,
+                                "h": 60
+                            },
+                            "file": "assets/menu/menu_item_heart.png",
+                            "icon_box": {
+                                "file": "assets/icons/icon_box_heart.png",
+                                "color": "#F54BA0",
+                                "icon": "heart"
+                            }
+                        },
+                        {
+                            "id": "menu_logout",
+                            "label_i18n_key": "menu_logout",
+                            "label": "退出登录",
+                            "bounds": {
+                                "x": 1035,
+                                "y": 693,
+                                "w": 475,
+                                "h": 60
+                            },
+                            "file": "assets/menu/menu_item_logout.png",
+                            "icon_box": {
+                                "file": "assets/icons/icon_box_logout.png",
+                                "color": "#F55B4B",
+                                "icon": "logout"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

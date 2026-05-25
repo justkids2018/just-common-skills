@@ -86,12 +86,43 @@ just-dev-pipeline (编排器)
 
 ## 安装和更新
 
-### 全局安装（推荐）
+### 方式 1：通过 npx（最简单）
+
+直接从 GitHub 仓库安装，无需克隆：
+
+```bash
+# 安装所有技能到 Claude Code
+npx skills add qisd/just-common-skills -a claude-code -g -y
+
+# 或安装单个技能
+npx skills add qisd/just-common-skills --skill just-dev-pipeline -a claude-code -g -y
+```
+
+### 方式 2：下载 Release 包
+
+从 [GitHub Releases](https://github.com/qisd/just-common-skills/releases/latest) 下载 `just-common-skills.zip`：
+
+**Claude Desktop:**
+1. 下载 `just-common-skills.zip`
+2. 打开 Claude Desktop → Customize → Skills → "+" → Create skill
+3. 上传 zip 文件
+
+**手动安装:**
+```bash
+# 下载最新版本
+curl -L https://github.com/qisd/just-common-skills/releases/latest/download/just-common-skills.zip -o just-common-skills.zip
+
+# 解压到 Claude Code skills 目录
+unzip just-common-skills.zip -d ~/.claude/skills/just-common-skills
+```
+
+### 方式 3：全局安装（开发者模式）
 
 将技能安装到全局运行时路径，所有项目共享：
 
 ```bash
-cd /path/to/just-common-skills
+git clone https://github.com/qisd/just-common-skills.git ~/just-common-skills
+cd ~/just-common-skills
 ./scripts/install-skills.sh
 ```
 
@@ -108,6 +139,20 @@ cd /path/to/just-common-skills
 
 ```bash
 ./scripts/install-skills.sh --copy
+```
+
+### 更新技能
+
+**npx 方式:**
+```bash
+npx skills update -g -y
+```
+
+**手动方式:**
+```bash
+cd ~/just-common-skills
+git pull
+./scripts/install-skills.sh
 ```
 
 ### 项目注入（推荐用于团队项目）

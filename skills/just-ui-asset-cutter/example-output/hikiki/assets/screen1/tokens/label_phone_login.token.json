@@ -1,0 +1,10 @@
+{
+  "token_type": "text",
+  "component": "btn_outline_label",
+  "text": "手机号登录",
+  "i18n_key": "login.phone_login",
+  "color": "#52B84A",
+  "fontSize_px": 17,
+  "fontWeight": "500",
+  "letterSpacing": "0px"
+}

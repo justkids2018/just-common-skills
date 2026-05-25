@@ -667,6 +667,46 @@ npm run publish:scheduled
 
 ---
 
+## Three-Question Design Test
+
+### Q1: What exact job does this skill perform?
+Unified investment research and Xiaohongshu publishing workflow: collect data from official sources (IR/SEC/HKEX), analyze using investment framework (macro 4D + company quality 4D + valuation), generate research report MD + Xiaohongshu article + HTML cards, and publish to Xiaohongshu with 4 mandatory confirmation gates.
+
+### Q2: When should it activate? List at least 5 trigger phrases.
+1. "/just-value-red-publish [Company] [Type]"
+2. "analyze [Company] Q1 earnings and publish"
+3. "research [Company] industry analysis"
+4. "full research on [Company]" or "deep dive [Company]"
+5. "generate investment report and Xiaohongshu cards"
+
+### Q3: What does perfect output look like? Include one concrete output example.
+Perfect output includes: research report MD with macro 4D ratings + company quality assessment + valuation, Xiaohongshu article (Just 60 style, compliance-checked), HTML cards (7 cards for earnings, 6-7 for industry/business), and published post with tracking metrics for next quarter.
+
+Example:
+```
+✅ Research & Publish Complete: Robinhood Q1 2026 Earnings
+
+Phase 1: Data collected from SEC 10-Q (2026-05-08)
+Phase 2: Analysis complete
+  - Macro 4D: High Wall ✓ / Resilient / Polarization Aligned / AI Tool
+  - Quality: Deep Moat / Excellent Mgmt / Favorable / Healthy
+  - Valuation: $28-$35 fair range (current $32)
+
+Phase 3: Content generated
+  - Report: Just学投资/Robinhood研究/Robinhood-财报分析-Q1-2026-20260515.md
+  - Cards: 7 cards (cover + metrics + highlights + strategy + 4D + risks + valuation)
+  - Article: 450 words, Just 60 style, compliance-checked ✓
+
+Phase 4: HTML generated (Apple-style report + Xiaohongshu cards)
+Phase 5: Publisher configured (20:30 scheduled)
+Phase 6: Published to Xiaohongshu
+
+Next quarter tracking:
+1. Revenue: target $850M / alert <$800M
+2. ARPU: target $115 / alert <$105
+3. Net income margin: target 28% / alert <25%
+```
+
 ## 与其他 Skill 的关系
 
 | Skill | 关系 |

@@ -1,0 +1,32 @@
+{
+  "name": "@qisd/just-common-skills",
+  "version": "1.0.0",
+  "description": "Production-grade skill collection for Claude Code: 6-step dev pipeline, engineering review, QA, code review, deployment, and specialized workflows",
+  "main": null,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qisd/just-common-skills.git"
+  },
+  "keywords": [
+    "claude-code",
+    "skills",
+    "workflow",
+    "automation",
+    "development-pipeline"
+  ],
+  "author": "qisd",
+  "license": "MIT",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "skills",
+    "common-prompt",
+    "scripts",
+    "!**/__pycache__/**",
+    "!**/*.pyc",
+    "!**/node_modules/**",
+    "!**/.DS_Store"
+  ]
+}
