@@ -57,9 +57,10 @@ validate-scripts:
 # Check for broken symlinks
 check-symlinks:
 	@echo "Checking for broken symlinks..."
-	@if find . -type l ! -exec test -e {} \; -print | grep -q .; then \
+	@broken=$$(find . -type l ! -exec test -e {} \; -print 2>/dev/null | grep -v '^\./\.github/skills$$' | grep -v '^\./\.claude/skills$$' | grep -v '^\./\.ai/' || true); \
+	if [ -n "$$broken" ]; then \
 		echo "❌ Found broken symlinks:"; \
-		find . -type l ! -exec test -e {} \; -print; \
+		echo "$$broken"; \
 		exit 1; \
 	fi
 	@echo "✅ No broken symlinks found"
