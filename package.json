@@ -1,8 +1,11 @@
 {
   "name": "@qisd/just-common-skills",
   "version": "1.0.0",
-  "description": "Production-grade skill collection for Claude Code: 6-step dev pipeline, engineering review, QA, code review, deployment, and specialized workflows",
-  "main": null,
+  "description": "Reusable cross-project skills with a minimal install/inject workflow",
+  "main": "scripts/cli.js",
+  "bin": {
+    "jcs": "scripts/cli.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/qisd/just-common-skills.git"
@@ -23,7 +26,10 @@
     "CLAUDE.md",
     "skills",
     "common-prompt",
-    "scripts",
+    "scripts/cli.js",
+    "scripts/quick-install.sh",
+    "scripts/inject-current-project.sh",
+    "scripts/uninstall-skills.sh",
     "!**/__pycache__/**",
     "!**/*.pyc",
     "!**/node_modules/**",

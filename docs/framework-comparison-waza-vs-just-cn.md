@@ -155,28 +155,25 @@ just-value-red-publish (4 个门禁):
 ## 5. 分发与安装
 
 ### Waza
-**目标平台**:
-- Claude Code (npx 或插件市场)
-- Codex (npx)
-- Claude Desktop (ZIP 上传)
-- Pi coding agent (从 `skills/<name>/SKILL.md` 加载)
+**关键特征**：统一的安装入口（`npx skills ...`）+ 少量高频命令。
 
-**安装**: 简单复制/链接到运行时
+示例：
+- `npx skills add tw93/Waza -a claude-code -g -y`
+- `npx skills update -g -y`
+
+**为什么看起来干净**：用户只记 1 类命令，不需要关心仓库内部脚本细节。
 
 ### Just-Common-Skills
-**目标平台**:
-- Claude Code (`~/.claude/skills`)
-- GitHub Copilot (`.github/skills`, `.github/copilot-instructions.md`)
-- VS Code prompts (可选镜像)
+**对齐后的简化入口**：
+- 免 npm：`bash <(curl -fsSL https://raw.githubusercontent.com/qisd/just-common-skills/main/scripts/quick-install.sh)`
+- npm 短命令：`npm i -g @qisd/just-common-skills && jcs i`
+- 项目注入：`jcs inject /path/to/project --force`
 
-**安装模式**:
-1. **全局安装**: `./scripts/install-skills.sh` → `~/.claude/skills`
-2. **项目注入**: `./scripts/inject-current-project.sh --force`
-   - 创建: `AGENTS.md`, `CLAUDE.md`, `.github/skills`, `.claude/skills`, `.ai/common-prompt`
-   - 符号链接模式: 一次更新传播到所有项目
-3. **引用入口模式**: `--reference-entry` 标志创建指向共享中心的精简治理文件
+**为什么之前显得长**：文档把内部脚本也暴露给用户。
 
-**核心差异**: Waza 是便携的；Just 是中心化的多项目同步。
+**现在的策略**：对外只保留两个公共动作（安装、注入），其余脚本归入内部维护。
+
+**核心差异**：Waza 是“统一包管理入口”；Just 是“中心化同步 + 统一短命令入口（jcs）”。
 
 ---
 
