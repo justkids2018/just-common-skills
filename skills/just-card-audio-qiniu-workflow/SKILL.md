@@ -14,6 +14,12 @@ description: >
 3. 上传到七牛目录 `kiki/audio/`（可配置 key 前缀）。
 4. 可选产出审计清单（manifest），可选回写音频 URL 到原 JSON。
 
+## 运行原则（本次优化）
+
+1. 原始 JSON 默认不改动；推荐始终输出到新的 `_audio.json` 文件。
+2. 批量执行应可重复（idempotent）；七牛返回 `614 file exists` 视为可复用成功，不应中断整批。
+3. `output_json_path` 推荐使用文件名（如 `xxx_audio.json`）或绝对路径，避免传入“workspace 相对全路径”导致嵌套目录误写。
+
 ## 触发
 
 强触发词：
@@ -40,7 +46,7 @@ description: >
 5. `en_voice`：英文 voice（默认 `en-US-AnaNeural`，偏儿童感）
 6. `writeback_json`：是否把音频 URL 回写到 JSON
 7. `output_json_path`：回写目标 JSON 路径（与 `writeback_json` 一起使用；设置后不改原文件）
-8. `public_base_url`：回写 URL 的公网前缀（默认 `http://img.mtrain.xyz`，与现有图片一致）
+8. `public_base_url`：回写 URL 的公网前缀（默认 `http://img.keepthinking.me`，与现有图片一致）
 9. `upload_url_override`：可覆盖上传地址（当音频上传 endpoint 与图片不同）
 10. `domain_override`：可覆盖 token 返回域名
 11. `name_strategy`：音频命名策略，默认 `split`（中文文件名用中文词、英文文件名用英文词），可选 `concat|id`
@@ -88,12 +94,18 @@ description: >
 4. 示例（split）：`.../课本-a1b2c3_cn.mp3` 与 `.../textbook-a1b2c3_en.mp3`
 5. 若设 `name_strategy=concat`，则使用旧规则：`.../{中文名-英文名-短哈希}_{cn|en}.mp3`
 6. 若设 `name_strategy=id`，则回退为 `.../{item_id}_{cn|en}.mp3`
+7. 若返回 `614 file exists`，按“对象已存在”处理：继续回写 URL 并不中断当前批次。
 
 ### Step 4: 结果产物
 
 1. 若开启 `write_manifest`，生成同目录 manifest：`<json>.audio-manifest.json`
 2. 若回写开启且未设置 `output_json_path`：先备份原 JSON，再写入音频字段。
 3. 若回写开启且设置了 `output_json_path`：写入新文件，不修改原 JSON。
+
+## 推荐执行模式（保护原始文件）
+
+1. 单文件：始终加 `--writeback-json --output-json-path <name>_audio.json`
+2. 批量：逐文件执行时，`--output-json-path` 只传“文件名”，不传完整目录链。
 
 ## 脚本
 
@@ -104,6 +116,34 @@ description: >
 依赖：
 
 1. `pip install edge-tts requests`
+
+## 音频验证页面（新增）
+
+模板路径：
+
+1. `.github/skills/just-card-audio-qiniu-workflow/templates/audio-verify.html`
+
+用途：
+
+1. 校验 `_audio.json` 中 `audio_cn_url/audio_en_url` 是否可播放
+2. 支持 HTTP/HTTPS 音频在线播放
+3. 支持一键下载音频后本地复核
+
+使用方式：
+
+1. 打开模板页面后，输入 JSON 绝对路径 / `file://` / `http(s)://` 地址加载
+2. 或直接选择本地 `_audio.json` 文件加载
+3. 支持单条播放与“顺播全部中文/英文”
+
+一键页面生成建议（写入绝对 JSON 地址）：
+
+1. 复制模板到卡目录并命名 `一键音频验证.html`
+2. 把页面中的 `DEFAULT_JSON_PATH` 改成该卡 `_audio.json` 的绝对路径
+3. 直接双击打开即可开始验证
+
+示例绝对路径（scene_02）：
+
+1. `/Users/qisd/Documents/development/my_project/kiki_chain/kiki_web/doc/card-generation/scene-info/scene_02_数学思维/kik_数学思维_06_比大小/kik_数学思维_06_比大小_audio.json`
 
 示例（只生成并上传，不回写）：
 
@@ -119,7 +159,7 @@ python .github/skills/just-card-audio-qiniu-workflow/scripts/json_text_to_audio_
 python .github/skills/just-card-audio-qiniu-workflow/scripts/json_text_to_audio_qiniu.py \
   kiki_web/doc/card-generation/scene-info/scene_01_晨光乐趣/kik_晨光乐趣_03_晨读时光/kik_晨光乐趣_03_晨读时光.json \
   --api-base http://127.0.0.1:8080 \
-  --public-base-url http://img.mtrain.xyz \
+  --public-base-url http://img.keepthinking.me \
   --writeback-json
 ```
 
@@ -132,11 +172,33 @@ python .github/skills/just-card-audio-qiniu-workflow/scripts/json_text_to_audio_
   --qiniu-access-key "$QINIU_ACCESS_KEY" \
   --qiniu-secret-key "$QINIU_SECRET_KEY" \
   --qiniu-bucket "$QINIU_BUCKET" \
-  --qiniu-domain img.mtrain.xyz \
+  --qiniu-domain img.keepthinking.me \
   --qiniu-upload-url https://up-z2.qiniup.com \
-  --public-base-url http://img.mtrain.xyz \
+  --public-base-url http://img.keepthinking.me \
   --writeback-json \
   --output-json-path kik_晨光乐趣_01_操场晨练_audio.json
+```
+
+示例（zsh 批量，直传模式，不改原文件）：
+
+```bash
+set -a; source kiki_server/.env; set +a
+base="kiki_web/doc/card-generation/scene-info/scene_01_晨光乐趣"
+
+find "$base" -type f -name '*.json' ! -name '*_audio.json' | sort | while IFS= read -r f; do
+  out_name="$(basename "${f%.json}")_audio.json"
+  python .github/skills/just-card-audio-qiniu-workflow/scripts/json_text_to_audio_qiniu.py \
+    "$f" \
+    --token-source direct \
+    --qiniu-access-key "$QINIU_ACCESS_KEY" \
+    --qiniu-secret-key "$QINIU_SECRET_KEY" \
+    --qiniu-bucket "$QINIU_BUCKET" \
+    --qiniu-domain "$QINIU_DOMAIN" \
+    --qiniu-upload-url "https://up-z2.qiniup.com" \
+    --public-base-url "http://img.keepthinking.me" \
+    --writeback-json \
+    --output-json-path "$out_name"
+done
 ```
 
 示例（音频上传地址与图片不一致时）：
@@ -146,8 +208,8 @@ python .github/skills/just-card-audio-qiniu-workflow/scripts/json_text_to_audio_
   kiki_web/doc/card-generation/scene-info/scene_01_晨光乐趣/kik_晨光乐趣_03_晨读时光/kik_晨光乐趣_03_晨读时光.json \
   --api-base http://127.0.0.1:8080 \
   --upload-url-override https://up-z2.qiniup.com \
-  --domain-override img.mtrain.xyz \
-  --public-base-url http://img.mtrain.xyz \
+  --domain-override img.keepthinking.me \
+  --public-base-url http://img.keepthinking.me \
   --writeback-json
 ```
 
@@ -160,9 +222,9 @@ python .github/skills/just-card-audio-qiniu-workflow/scripts/json_text_to_audio_
   --qiniu-access-key "$QINIU_ACCESS_KEY" \
   --qiniu-secret-key "$QINIU_SECRET_KEY" \
   --qiniu-bucket "$QINIU_BUCKET" \
-  --qiniu-domain img.mtrain.xyz \
+  --qiniu-domain img.keepthinking.me \
   --qiniu-upload-url https://up-z2.qiniup.com \
-  --public-base-url http://img.mtrain.xyz \
+  --public-base-url http://img.keepthinking.me \
   --writeback-json
 ```
 
@@ -172,6 +234,8 @@ python .github/skills/just-card-audio-qiniu-workflow/scripts/json_text_to_audio_
 2. edge-tts 缺失：`pip install edge-tts`。
 3. 上传成功但 URL 访问失败：确认 `domain` 对应 CDN 域名已生效。
 4. 想改目录到 `/audio/`：保持 `key_prefix=kiki/audio`（默认即此规则）。
+5. 批量后出现嵌套目录：通常是 `--output-json-path` 传了完整相对路径；改为仅文件名或绝对路径。
+6. 报 `614 file exists`：表示七牛对象已存在，当前脚本会按可复用成功处理并继续。
 
 ## 边界说明
 

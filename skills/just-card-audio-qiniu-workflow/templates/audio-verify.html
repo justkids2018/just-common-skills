@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>卡片音频验证</title>
+    <style>
+        :root {
+            --bg: #0b1220;
+            --panel: #121b2b;
+            --line: #2a3a55;
+            --text: #eaf1ff;
+            --muted: #9db0d3;
+            --brand: #57d6ff;
+            --ok: #69db7c;
+            --warn: #ffd166;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: radial-gradient(circle at 20% 0%, #17253d 0%, var(--bg) 45%);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 24px;
+        }
+
+        .hint {
+            margin: 0 0 16px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .card {
+            background: linear-gradient(180deg, #16243b 0%, #121b2b 100%);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 360px;
+            background: #0d1626;
+            color: var(--text);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        button,
+        .btn-link {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #0e1a2c;
+            color: var(--text);
+            padding: 8px 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+
+        button:hover,
+        .btn-link:hover {
+            border-color: var(--brand);
+        }
+
+        .status {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 8px;
+            white-space: pre-wrap;
+        }
+
+        .ok {
+            color: var(--ok);
+        }
+
+        .warn {
+            color: var(--warn);
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid var(--line);
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            color: #b8c8e6;
+            font-weight: 600;
+        }
+
+        .url {
+            max-width: 360px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+        }
+
+        .group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1>卡片音频验证</h1>
+        <p class="hint">支持 file/http/https JSON；支持 HTTP 音频在线播放，也可直接下载音频文件验证。</p>
+
+        <div class="card">
+            <div class="row">
+                <input id="jsonPath" type="text" placeholder="输入 JSON 绝对路径、file://、http(s):// 地址" />
+                <button id="btnLoadPath">加载路径</button>
+                <input id="filePicker" type="file" accept="application/json" />
+                <button id="btnLoadFile">加载本地文件</button>
+            </div>
+            <div class="row" style="margin-top: 10px;">
+                <button id="btnPlayAllCn">顺播全部中文</button>
+                <button id="btnPlayAllEn">顺播全部英文</button>
+                <button id="btnStop">停止播放</button>
+            </div>
+            <audio id="player" controls preload="none"></audio>
+            <div id="status" class="status">等待加载音频 JSON...</div>
+        </div>
+
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 90px;">ID</th>
+                        <th style="width: 160px;">中文</th>
+                        <th style="width: 180px;">英文</th>
+                        <th>中文音频</th>
+                        <th>英文音频</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_JSON_PATH = "";
+
+        const state = {
+            items: [],
+            queue: [],
+            playing: false,
+        };
+
+        const jsonPathEl = document.getElementById("jsonPath");
+        const filePickerEl = document.getElementById("filePicker");
+        const statusEl = document.getElementById("status");
+        const tbodyEl = document.getElementById("tbody");
+        const playerEl = document.getElementById("player");
+
+        function setStatus(msg, level) {
+            statusEl.className = "status" + (level ? " " + level : "");
+            statusEl.textContent = msg;
+        }
+
+        function toUrl(input) {
+            const raw = (input || "").trim();
+            if (!raw) return "";
+            if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("file://")) {
+                return raw;
+            }
+            if (raw.startsWith("/")) {
+                return "file://" + raw;
+            }
+            return raw;
+        }
+
+        function escapeHtml(s) {
+            return String(s || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function renderTable(items) {
+            if (!Array.isArray(items) || items.length === 0) {
+                tbodyEl.innerHTML = "<tr><td colspan='5'>未找到可验证条目</td></tr>";
+                return;
+            }
+
+            const rows = items.map((item, idx) => {
+                const id = item.id || "item_" + (idx + 1);
+                const cn = item.text || "";
+                const en = item.text_english || "";
+                const cnUrl = item.audio_cn_url || "";
+                const enUrl = item.audio_en_url || "";
+
+                const cnTools = cnUrl
+                    ? `<div class="group">
+               <button data-act="play" data-lang="cn" data-idx="${idx}">播放</button>
+               <a class="btn-link" href="${escapeHtml(cnUrl)}" download>下载</a>
+             </div>
+             <a class="url" href="${escapeHtml(cnUrl)}" target="_blank">${escapeHtml(cnUrl)}</a>`
+                    : "<span class='warn'>无中文音频 URL</span>";
+
+                const enTools = enUrl
+                    ? `<div class="group">
+               <button data-act="play" data-lang="en" data-idx="${idx}">播放</button>
+               <a class="btn-link" href="${escapeHtml(enUrl)}" download>下载</a>
+             </div>
+             <a class="url" href="${escapeHtml(enUrl)}" target="_blank">${escapeHtml(enUrl)}</a>`
+                    : "<span class='warn'>无英文音频 URL</span>";
+
+                return `<tr>
+          <td>${escapeHtml(id)}</td>
+          <td>${escapeHtml(cn)}</td>
+          <td>${escapeHtml(en)}</td>
+          <td>${cnTools}</td>
+          <td>${enTools}</td>
+        </tr>`;
+            }).join("\n");
+
+            tbodyEl.innerHTML = rows;
+        }
+
+        function extractPlayable(items, lang) {
+            const key = lang === "cn" ? "audio_cn_url" : "audio_en_url";
+            return items
+                .map((item, idx) => ({ idx, url: item[key], id: item.id || "item_" + (idx + 1), text: item.text || "" }))
+                .filter(x => typeof x.url === "string" && x.url.trim());
+        }
+
+        function playUrl(url, label) {
+            if (!url) {
+                setStatus("音频 URL 为空，无法播放", "warn");
+                return;
+            }
+            playerEl.src = url;
+            playerEl.play().then(() => {
+                setStatus("播放中: " + label, "ok");
+            }).catch((err) => {
+                setStatus("播放失败: " + err.message + "。可点击下载后本地验证。", "warn");
+            });
+        }
+
+        function playQueue(queue) {
+            state.queue = queue.slice();
+            state.playing = state.queue.length > 0;
+            if (!state.playing) {
+                setStatus("当前列表没有可播放音频", "warn");
+                return;
+            }
+
+            const next = () => {
+                if (!state.playing) return;
+                const item = state.queue.shift();
+                if (!item) {
+                    state.playing = false;
+                    setStatus("顺播完成", "ok");
+                    return;
+                }
+
+                playerEl.src = item.url;
+                playerEl.play().then(() => {
+                    setStatus("顺播中: " + item.id + " / " + (item.text || ""), "ok");
+                }).catch((err) => {
+                    setStatus("顺播失败，跳过: " + err.message, "warn");
+                    next();
+                });
+            };
+
+            playerEl.onended = next;
+            next();
+        }
+
+        async function loadFromPath() {
+            const raw = jsonPathEl.value.trim();
+            if (!raw) {
+                setStatus("请先输入 JSON 路径", "warn");
+                return;
+            }
+
+            const url = toUrl(raw);
+            setStatus("正在加载: " + url);
+
+            try {
+                const res = await fetch(url, { cache: "no-store" });
+                if (!res.ok) {
+                    throw new Error("HTTP " + res.status);
+                }
+                const data = await res.json();
+                if (!Array.isArray(data)) {
+                    throw new Error("JSON 根节点必须是数组");
+                }
+                state.items = data;
+                renderTable(state.items);
+                const cnCount = extractPlayable(state.items, "cn").length;
+                const enCount = extractPlayable(state.items, "en").length;
+                setStatus(`加载成功: ${data.length} 条，中文音频 ${cnCount}，英文音频 ${enCount}`, "ok");
+            } catch (err) {
+                setStatus("加载失败: " + err.message + "。你也可以用“加载本地文件”方式验证。", "warn");
+            }
+        }
+
+        async function loadFromFile() {
+            const file = filePickerEl.files && filePickerEl.files[0];
+            if (!file) {
+                setStatus("请先选择本地 JSON 文件", "warn");
+                return;
+            }
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                if (!Array.isArray(data)) {
+                    throw new Error("JSON 根节点必须是数组");
+                }
+                state.items = data;
+                renderTable(state.items);
+                const cnCount = extractPlayable(state.items, "cn").length;
+                const enCount = extractPlayable(state.items, "en").length;
+                setStatus(`本地文件加载成功: ${data.length} 条，中文音频 ${cnCount}，英文音频 ${enCount}`, "ok");
+            } catch (err) {
+                setStatus("本地文件解析失败: " + err.message, "warn");
+            }
+        }
+
+        document.getElementById("btnLoadPath").addEventListener("click", loadFromPath);
+        document.getElementById("btnLoadFile").addEventListener("click", loadFromFile);
+
+        document.getElementById("btnPlayAllCn").addEventListener("click", () => {
+            playQueue(extractPlayable(state.items, "cn"));
+        });
+
+        document.getElementById("btnPlayAllEn").addEventListener("click", () => {
+            playQueue(extractPlayable(state.items, "en"));
+        });
+
+        document.getElementById("btnStop").addEventListener("click", () => {
+            state.playing = false;
+            state.queue = [];
+            playerEl.pause();
+            playerEl.currentTime = 0;
+            setStatus("已停止播放");
+        });
+
+        tbodyEl.addEventListener("click", (e) => {
+            const target = e.target;
+            if (!(target instanceof HTMLElement)) return;
+            if (target.dataset.act !== "play") return;
+            const idx = Number(target.dataset.idx || "-1");
+            const lang = target.dataset.lang;
+            if (!state.items[idx]) return;
+            const url = lang === "cn" ? state.items[idx].audio_cn_url : state.items[idx].audio_en_url;
+            const label = `${state.items[idx].id || (idx + 1)} / ${lang === "cn" ? "中文" : "英文"}`;
+            playUrl(url, label);
+        });
+
+        jsonPathEl.value = DEFAULT_JSON_PATH;
+        if (DEFAULT_JSON_PATH) {
+            loadFromPath();
+        } else {
+            renderTable([]);
+        }
+    </script>
+</body>
+
+</html>

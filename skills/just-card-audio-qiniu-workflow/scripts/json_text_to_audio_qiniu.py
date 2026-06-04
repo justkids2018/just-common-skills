@@ -84,8 +84,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--public-base-url",
-        default=os.getenv("KIKI_QINIU_PUBLIC_BASE", "http://img.mtrain.xyz"),
-        help="Public base URL used in JSON writeback, e.g. http://img.mtrain.xyz",
+        default=os.getenv("KIKI_QINIU_PUBLIC_BASE", "http://img.keepthinking.me"),
+        help="Public base URL used in JSON writeback, e.g. http://img.keepthinking.me",
     )
     parser.add_argument(
         "--qiniu-access-key",
@@ -104,7 +104,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--qiniu-domain",
-        default=os.getenv("QINIU_DOMAIN", "img.mtrain.xyz"),
+        default=os.getenv("QINIU_DOMAIN", "img.keepthinking.me"),
         help="Qiniu public domain",
     )
     parser.add_argument(
@@ -308,7 +308,11 @@ def get_upload_token(api_base: str, auth_token: str) -> Tuple[str, str, str]:
     return parse_token_response(body)
 
 
-def upload_file(upload_url: str, token: str, key: str, file_path: Path) -> None:
+def _is_qiniu_file_exists_error(status_code: int, body: str) -> bool:
+    return status_code == 614 and "file exists" in body.lower()
+
+
+def upload_file(upload_url: str, token: str, key: str, file_path: Path) -> str:
     mime = mimetypes.guess_type(file_path.name)[0] or "audio/mpeg"
     with file_path.open("rb") as f:
         files = {
@@ -321,7 +325,11 @@ def upload_file(upload_url: str, token: str, key: str, file_path: Path) -> None:
         res = requests.post(upload_url, data=data, files=files, timeout=60)
 
     if res.status_code >= 400:
+        if _is_qiniu_file_exists_error(res.status_code, res.text):
+            return "exists"
         raise WorkflowError(f"Qiniu upload failed for {key}: HTTP {res.status_code} {res.text}")
+
+    return "uploaded"
 
 
 def build_public_url(domain: str, key: str, public_base_url: str) -> str:
@@ -394,10 +402,21 @@ def resolve_output_json_path(source_json_path: Path, output_json_path: str) -> P
     raw = (output_json_path or "").strip()
     if not raw:
         return source_json_path
+
     out = Path(raw).expanduser()
-    if not out.is_absolute():
-        out = source_json_path.parent / out
-    return out.resolve()
+    if out.is_absolute():
+        return out.resolve()
+
+    # For multi-level relative paths (e.g. kiki_web/doc/..../x_audio.json),
+    # prefer resolving from current working directory when it clearly points to
+    # a workspace-root path. This avoids accidental nested duplicate paths.
+    cwd = Path.cwd()
+    if out.parent != Path("."):
+        cwd_candidate = (cwd / out).resolve()
+        if (cwd / out.parts[0]).exists() or cwd_candidate.parent.exists():
+            return cwd_candidate
+
+    return (source_json_path.parent / out).resolve()
 
 
 async def run() -> int:
@@ -412,6 +431,8 @@ async def run() -> int:
     # Keep Chinese/English readability for scene-level folder segment.
     base_name = sanitize_zh_segment(json_path.stem)
     item_results: List[Dict[str, Any]] = []
+    uploaded_count = 0
+    exists_count = 0
 
     if args.dry_run:
         token = ""
@@ -456,13 +477,23 @@ async def run() -> int:
 
             cn_url = ""
             en_url = ""
+            cn_upload_status = "skipped"
+            en_upload_status = "skipped"
 
             if not args.dry_run:
                 if cn_text:
-                    upload_file(upload_url, token, cn_key, cn_file)
+                    cn_upload_status = upload_file(upload_url, token, cn_key, cn_file)
+                    if cn_upload_status == "uploaded":
+                        uploaded_count += 1
+                    elif cn_upload_status == "exists":
+                        exists_count += 1
                     cn_url = build_public_url(domain, cn_key, args.public_base_url)
                 if en_text:
-                    upload_file(upload_url, token, en_key, en_file)
+                    en_upload_status = upload_file(upload_url, token, en_key, en_file)
+                    if en_upload_status == "uploaded":
+                        uploaded_count += 1
+                    elif en_upload_status == "exists":
+                        exists_count += 1
                     en_url = build_public_url(domain, en_key, args.public_base_url)
 
             if args.writeback_json and not args.dry_run:
@@ -480,6 +511,8 @@ async def run() -> int:
                     "audio_en_key": en_key if en_text else "",
                     "audio_cn_url": cn_url,
                     "audio_en_url": en_url,
+                    "upload_cn_status": cn_upload_status,
+                    "upload_en_status": en_upload_status,
                 }
             )
 
@@ -513,7 +546,9 @@ async def run() -> int:
     ok_count = sum(1 for x in item_results if x.get("status") == "ok")
     skip_count = sum(1 for x in item_results if x.get("status") == "skipped")
 
-    print(f"DONE: ok={ok_count}, skipped={skip_count}")
+    print(
+        f"DONE: ok={ok_count}, skipped={skip_count}, uploaded={uploaded_count}, exists={exists_count}"
+    )
     if args.write_manifest:
         print(f"MANIFEST: {manifest_path}")
     if backup_path:

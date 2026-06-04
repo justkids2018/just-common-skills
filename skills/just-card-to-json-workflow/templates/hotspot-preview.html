@@ -164,7 +164,7 @@
         #overlay {
             position: absolute;
             inset: 0;
-            pointer-events: none;
+            pointer-events: auto;
         }
 
         .legend {
@@ -214,6 +214,10 @@
             grid-template-columns: 1fr 1fr;
             gap: 8px;
             margin-top: 8px;
+        }
+
+        .toolbar.single {
+            grid-template-columns: 1fr;
         }
 
         .coord {
@@ -318,6 +322,31 @@
                 <button id="fillDemoBtn" class="secondary">填充示例（animals）</button>
             </div>
 
+            <div class="toolbar">
+                <button id="beginEditBtn" class="secondary">开始编辑（启用拖拽）</button>
+                <button id="endEditBtn" class="secondary">结束编辑（锁定拖拽）</button>
+            </div>
+
+            <div class="toolbar single">
+                <button id="writeBackJsonBtn" class="secondary">一键回写当前 JSON</button>
+            </div>
+
+            <div class="toolbar">
+                <button id="growSelectedBtn" class="secondary">放大选中框</button>
+                <button id="shrinkSelectedBtn" class="secondary">缩小选中框</button>
+            </div>
+
+            <div class="toolbar single">
+                <button id="downloadJsonBtn" class="secondary">下载修改后 JSON</button>
+            </div>
+
+            <div class="toolbar single">
+                <button id="revertEditsBtn" class="secondary">返回原始坐标（撤销本次编辑）</button>
+            </div>
+
+            <div class="path-hint" id="editHint">拖拽编辑：关；无未回写修改；回写权限未授权（首次一键回写会请求授权）。</div>
+            <div class="path-hint" id="selectedHint">未选中热区（点击画布或表格可选中）。</div>
+
             <div class="checks" id="checks"></div>
             <div class="score-box" id="scoreBox">评分：- / 100（通过线：89）</div>
             <div class="coord" id="coord">cursor: -, -</div>
@@ -343,7 +372,8 @@
                         <th>#</th>
                         <th>id</th>
                         <th>text</th>
-                        <th>region_type</th>
+                        <th>label</th>
+                        <th>pair_dx</th>
                         <th>rect</th>
                     </tr>
                 </thead>
@@ -370,6 +400,15 @@
         const jsonPathEl = document.getElementById('jsonPath');
         const jsonTextEl = document.getElementById('jsonText');
         const dropzoneEl = document.getElementById('dropzone');
+        const editHintEl = document.getElementById('editHint');
+        const selectedHintEl = document.getElementById('selectedHint');
+        const beginEditBtn = document.getElementById('beginEditBtn');
+        const endEditBtn = document.getElementById('endEditBtn');
+        const growSelectedBtn = document.getElementById('growSelectedBtn');
+        const shrinkSelectedBtn = document.getElementById('shrinkSelectedBtn');
+        const revertEditsBtn = document.getElementById('revertEditsBtn');
+        const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+        const writeBackJsonBtn = document.getElementById('writeBackJsonBtn');
 
         const STORAGE_KEYS = {
             imagePath: 'hotspot.preview.imagePath',
@@ -386,8 +425,25 @@
         document.getElementById('savePathBtn').addEventListener('click', savePaths);
         document.getElementById('applyScenePathBtn').addEventListener('click', applyScenePath);
         document.getElementById('fillDemoBtn').addEventListener('click', fillDemo);
+        beginEditBtn.addEventListener('click', () => setEditMode(true));
+        endEditBtn.addEventListener('click', () => setEditMode(false));
+        growSelectedBtn.addEventListener('click', () => resizeSelectedRegion(8));
+        shrinkSelectedBtn.addEventListener('click', () => resizeSelectedRegion(-8));
+        revertEditsBtn.addEventListener('click', revertToOriginalCoords);
+        downloadJsonBtn.addEventListener('click', downloadEditedJson);
+        writeBackJsonBtn.addEventListener('click', writeBackEditedJson);
 
         let flatRegions = [];
+        let drawRetryTimer = null;
+        let currentJsonData = null;
+        let originalJsonData = null;
+        let jsonWritebackHandle = null;
+        let editMode = false;
+        let hasUnsavedChanges = false;
+        let selectedRegionIndex = -1;
+        let activeDrag = null;
+        let lastValidationLines = [];
+        const DIRECT_WRITEBACK_ENDPOINT = 'http://127.0.0.1:18765/api/hotspot/write-json';
 
         function typeColor(type) {
             if (type === 'card') return getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
@@ -410,9 +466,419 @@
             return fallbackIndex + 1;
         }
 
+        function centerX(coord) {
+            const xs = coord.map(p => p.x);
+            return (Math.min(...xs) + Math.max(...xs)) / 2;
+        }
+
+        function clamp(value, min, max) {
+            return Math.min(max, Math.max(min, value));
+        }
+
+        function deepCloneJson(value) {
+            return JSON.parse(JSON.stringify(value));
+        }
+
+        function updateEditHint(extraMessage = '') {
+            const editLabel = editMode ? '开' : '关';
+            const dirtyLabel = hasUnsavedChanges ? '有未回写修改' : '无未回写修改';
+            const bindLabel = jsonWritebackHandle ? '回写权限已就绪（授权模式）' : '优先直写绝对路径（无弹窗，需本地直写服务）';
+            const msg = extraMessage ? `；${extraMessage}` : '';
+            editHintEl.textContent = `拖拽编辑：${editLabel}；${dirtyLabel}；${bindLabel}${msg}`;
+        }
+
+        function updateSelectedHint(extraMessage = '') {
+            if (!flatRegions.length || selectedRegionIndex < 0 || selectedRegionIndex >= flatRegions.length) {
+                selectedHintEl.textContent = '未选中热区（点击画布或表格可选中）。';
+                return;
+            }
+
+            const region = flatRegions[selectedRegionIndex];
+            const idx = displayIndex(region, selectedRegionIndex);
+            const regionType = (region.regionType || '-').toLowerCase();
+            const itemId = region.itemId || '-';
+            const text = region.text || '-';
+            const rect = normalizeRect(region.coordinate);
+            const pairKey = `${idx}|${itemId}|${regionType}|${text}`;
+            const msg = extraMessage ? `；${extraMessage}` : '';
+            selectedHintEl.textContent = `已选中：index=${idx}，id=${itemId}，type=${regionType}，text=${text}，rect=${rect.minX},${rect.minY}→${rect.maxX},${rect.maxY}，key=${pairKey}${msg}`;
+        }
+
+        function updateEditButtonsState() {
+            beginEditBtn.disabled = editMode;
+            endEditBtn.disabled = !editMode;
+        }
+
+        function updateActionButtonsState() {
+            const hasSelected = selectedRegionIndex >= 0 && selectedRegionIndex < flatRegions.length;
+            growSelectedBtn.disabled = !editMode || !hasSelected;
+            shrinkSelectedBtn.disabled = !editMode || !hasSelected;
+            revertEditsBtn.disabled = !hasUnsavedChanges;
+        }
+
+        function applyRegionRect(region, minX, minY, maxX, maxY) {
+            region.coordinate = toRectCoordinate(minX, minY, maxX, maxY);
+            syncRegionToSource(region);
+            hasUnsavedChanges = true;
+            updateEditHint();
+            updateActionButtonsState();
+            drawOverlay();
+            renderTable(flatRegions);
+            updateSelectedHint();
+            refreshValidation();
+        }
+
+        function resizeSelectedRegion(stepPx) {
+            if (!editMode) {
+                showMessage({ ok: false, msg: '请先点击“开始编辑（启用拖拽）”。' });
+                return;
+            }
+            if (selectedRegionIndex < 0 || selectedRegionIndex >= flatRegions.length) {
+                showMessage({ ok: false, msg: '请先在画布或表格里选中一个热区。' });
+                return;
+            }
+
+            const region = flatRegions[selectedRegionIndex];
+            const rect = normalizeRect(region.coordinate);
+            let minX = rect.minX - stepPx;
+            let minY = rect.minY - stepPx;
+            let maxX = rect.maxX + stepPx;
+            let maxY = rect.maxY + stepPx;
+
+            if ((maxX - minX) < 24 || (maxY - minY) < 24) {
+                showMessage({ ok: false, msg: '继续缩小会导致热区过小，已阻止。' });
+                return;
+            }
+
+            minX = clamp(Math.round(minX), 0, 1022);
+            minY = clamp(Math.round(minY), 0, 1022);
+            maxX = clamp(Math.round(maxX), 1, 1023);
+            maxY = clamp(Math.round(maxY), 1, 1023);
+            if (maxX <= minX || maxY <= minY) return;
+
+            applyRegionRect(region, minX, minY, maxX, maxY);
+        }
+
+        function revertToOriginalCoords() {
+            if (!originalJsonData) {
+                showMessage({ ok: false, msg: '当前没有可恢复的原始数据。' });
+                return;
+            }
+
+            currentJsonData = deepCloneJson(originalJsonData);
+            flatRegions = flattenItemsData(currentJsonData);
+            hasUnsavedChanges = false;
+            selectedRegionIndex = -1;
+            activeDrag = null;
+            drawOverlay();
+            scheduleOverlayDrawRetry();
+            renderTable(flatRegions);
+            refreshValidation();
+            updateEditHint('已恢复到本次加载前坐标');
+            updateSelectedHint();
+            updateActionButtonsState();
+        }
+
+        function showMessage(line) {
+            const merged = [line];
+            if (lastValidationLines.length) merged.push(...lastValidationLines);
+            showChecks(merged);
+        }
+
+        function refreshValidation() {
+            if (!imageEl.naturalWidth || !imageEl.naturalHeight || !flatRegions.length) return;
+            const result = validate(imageEl.naturalWidth, imageEl.naturalHeight, flatRegions);
+            lastValidationLines = result.lines;
+            showChecks(result.lines);
+            renderScore(result.score, result.pass);
+        }
+
+        function toRectCoordinate(minX, minY, maxX, maxY) {
+            return [
+                { x: minX, y: minY },
+                { x: maxX, y: minY },
+                { x: minX, y: maxY },
+                { x: maxX, y: maxY }
+            ];
+        }
+
+        function syncRegionToSource(region) {
+            if (!currentJsonData || !Number.isInteger(region.sourceItemIndex)) return;
+            const item = currentJsonData[region.sourceItemIndex];
+            if (!item) return;
+
+            const points = region.coordinate.map(p => ({
+                x: Math.round(p.x),
+                y: Math.round(p.y)
+            }));
+            region.coordinate = points;
+
+            if (region.sourceType === 'regions') {
+                if (Array.isArray(item.regions) && item.regions[region.sourceRegionIndex]) {
+                    item.regions[region.sourceRegionIndex].coordinate = points.map(p => ({ x: p.x, y: p.y }));
+                }
+            } else if (Array.isArray(item.coordinate)) {
+                item.coordinate = points.map(p => ({ x: p.x, y: p.y }));
+            }
+        }
+
+        function suggestedJsonFilename() {
+            const path = (jsonPathEl.value || '').trim();
+            if (path) {
+                const parts = path.split('/');
+                return parts[parts.length - 1] || 'hotspot-edited.json';
+            }
+            const card = (cardSlugEl.value || '').trim();
+            return `${card || 'hotspot-edited'}.json`;
+        }
+
+        function setEditMode(enabled) {
+            editMode = enabled;
+            if (!editMode) activeDrag = null;
+            canvas.style.pointerEvents = 'auto';
+            canvas.style.cursor = editMode ? 'grab' : 'default';
+            updateEditButtonsState();
+            updateActionButtonsState();
+            updateEditHint();
+            updateSelectedHint();
+            if (flatRegions.length) drawOverlay();
+        }
+
+        function isPickerAbortError(err) {
+            if (!err) return false;
+            if (err.name === 'AbortError') return true;
+            const msg = String(err.message || err);
+            return /aborted a request/i.test(msg);
+        }
+
+        function isAbsoluteLocalPath(path) {
+            if (!path) return false;
+            if (path.startsWith('/')) return true;
+            return /^[A-Za-z]:[\\/]/.test(path);
+        }
+
+        function normalizeJsonPathForWriteback(rawPath) {
+            const value = (rawPath || '').trim();
+            if (!value) return '';
+            if (value.startsWith('file://')) {
+                try {
+                    return decodeURIComponent(new URL(value).pathname);
+                } catch (err) {
+                    return value.replace(/^file:\/\//, '');
+                }
+            }
+            return value;
+        }
+
+        async function postJsonWithTimeout(url, payload, timeoutMs = 1600) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                return await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        async function tryDirectWritebackByPath() {
+            const jsonPath = normalizeJsonPathForWriteback(jsonPathEl.value || '');
+            if (!isAbsoluteLocalPath(jsonPath)) {
+                return { attempted: false, ok: false, path: '' };
+            }
+
+            const text = `${JSON.stringify(currentJsonData, null, 2)}\n`;
+            try {
+                const resp = await postJsonWithTimeout(DIRECT_WRITEBACK_ENDPOINT, {
+                    path: jsonPath,
+                    text
+                });
+
+                if (!resp.ok) {
+                    const errText = await resp.text();
+                    return {
+                        attempted: true,
+                        ok: false,
+                        path: jsonPath,
+                        error: `直写服务返回 ${resp.status}${errText ? `: ${errText}` : ''}`
+                    };
+                }
+
+                return { attempted: true, ok: true, path: jsonPath };
+            } catch (err) {
+                return {
+                    attempted: true,
+                    ok: false,
+                    path: jsonPath,
+                    error: `未连接到直写服务（${DIRECT_WRITEBACK_ENDPOINT}）`
+                };
+            }
+        }
+
+        async function ensureWritebackHandle() {
+            if (jsonWritebackHandle) return true;
+            if (!window.showOpenFilePicker) {
+                throw new Error('当前环境不支持直接回写文件，请使用“下载修改后 JSON”。');
+            }
+
+            const handles = await window.showOpenFilePicker({
+                multiple: false,
+                types: [{
+                    description: 'JSON',
+                    accept: { 'application/json': ['.json'] }
+                }]
+            });
+
+            if (!handles || !handles.length) return false;
+            jsonWritebackHandle = handles[0];
+            updateEditHint(`已授权文件：${jsonWritebackHandle.name}`);
+            return true;
+        }
+
+        async function writeBackEditedJson() {
+            if (!currentJsonData) {
+                showMessage({ ok: false, msg: '请先加载 JSON 再回写。' });
+                return;
+            }
+
+            const directResult = await tryDirectWritebackByPath();
+            if (directResult.ok) {
+                hasUnsavedChanges = false;
+                updateEditHint(`已直写：${directResult.path}`);
+                updateActionButtonsState();
+                showMessage({ ok: true, msg: `已直写到目标文件：${directResult.path}` });
+                return;
+            }
+            if (directResult.attempted) {
+                updateEditHint('直写服务未就绪（未弹授权框）');
+                showMessage({ ok: false, msg: `${directResult.error}；请先启动直写服务，或使用“下载修改后 JSON”。` });
+                return;
+            }
+
+            try {
+                const hasHandle = await ensureWritebackHandle();
+                if (!hasHandle || !jsonWritebackHandle) {
+                    showMessage({ ok: false, msg: '已取消授权，未执行回写。再次点击“一键回写当前 JSON”可重试。' });
+                    return;
+                }
+
+                const writable = await jsonWritebackHandle.createWritable();
+                const text = `${JSON.stringify(currentJsonData, null, 2)}\n`;
+                await writable.write(text);
+                await writable.close();
+                hasUnsavedChanges = false;
+                updateEditHint();
+                updateActionButtonsState();
+                showMessage({ ok: true, msg: `已回写：${jsonWritebackHandle.name}` });
+            } catch (err) {
+                if (isPickerAbortError(err)) {
+                    showMessage({ ok: false, msg: '已取消授权，未执行回写。再次点击“一键回写当前 JSON”可重试。' });
+                    return;
+                }
+                showMessage({ ok: false, msg: `回写失败：${err.message || String(err)}` });
+            }
+        }
+
+        function downloadEditedJson() {
+            if (!currentJsonData) {
+                showMessage({ ok: false, msg: '请先加载 JSON 再下载。' });
+                return;
+            }
+
+            const text = `${JSON.stringify(currentJsonData, null, 2)}\n`;
+            const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = suggestedJsonFilename();
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+
+            showMessage({ ok: true, msg: `已下载修改后 JSON：${link.download}` });
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function buildRegionLabel(region, fallbackIndex) {
+            const idx = displayIndex(region, fallbackIndex);
+            const rt = (region.regionType || 'card').toLowerCase();
+            const text = String(region.text || '').trim();
+            return text ? `${idx}:${rt}:${text}` : `${idx}:${rt}`;
+        }
+
+        function computePairDxStats(regions, maxDxThreshold = 120) {
+            const byItem = new Map();
+            const fallbackMap = new Map();
+
+            regions.forEach((r, idx) => {
+                if (!Array.isArray(r.coordinate)) return;
+                const fallbackKey = `idx_${displayIndex(r, idx)}`;
+                const key = (r.itemId || '').trim() || fallbackKey;
+                if (!byItem.has(key)) {
+                    byItem.set(key, {
+                        itemId: key,
+                        text: (r.text || '').trim(),
+                        card: null,
+                        object: null
+                    });
+                }
+                const bucket = byItem.get(key);
+                const rt = String(r.regionType || '').toLowerCase();
+                if (rt === 'card' && !bucket.card) bucket.card = r.coordinate;
+                if (rt === 'object' && !bucket.object) bucket.object = r.coordinate;
+                fallbackMap.set(idx, key);
+            });
+
+            const pairDxByItemId = {};
+            let pairedCount = 0;
+            let missingPair = 0;
+            let maxDx = 0;
+            let overDxCount = 0;
+            const overDxItems = [];
+
+            byItem.forEach((bucket, key) => {
+                if (!bucket.card || !bucket.object) {
+                    missingPair += 1;
+                    return;
+                }
+                pairedCount += 1;
+                const dx = Math.abs(centerX(bucket.card) - centerX(bucket.object));
+                pairDxByItemId[key] = dx;
+                if (dx > maxDx) maxDx = dx;
+                if (dx > maxDxThreshold) {
+                    overDxCount += 1;
+                    overDxItems.push(`${bucket.text || key}:${dx.toFixed(1)}`);
+                }
+            });
+
+            return {
+                pairDxByItemId,
+                fallbackMap,
+                pairedCount,
+                missingPair,
+                maxDx,
+                overDxCount,
+                overDxItems
+            };
+        }
+
         function flattenItemsData(items) {
             const out = [];
-            for (const item of items) {
+            for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
+                const item = items[itemIndex];
                 if (item && Array.isArray(item.regions)) {
                     item.regions.forEach((r, i) => {
                         if (!Array.isArray(r.coordinate)) return;
@@ -421,8 +887,11 @@
                             itemId: item.id,
                             text: item.text,
                             regionType: r.region_type || r.region_role || 'card',
-                            coordinate: r.coordinate,
-                            runtimeId: r.id || `${item.id}_${r.region_type || 'card'}_${i + 1}`
+                            coordinate: r.coordinate.map(p => ({ x: Number(p.x), y: Number(p.y) })),
+                            runtimeId: r.id || `${item.id}_${r.region_type || 'card'}_${i + 1}`,
+                            sourceType: 'regions',
+                            sourceItemIndex: itemIndex,
+                            sourceRegionIndex: i
                         });
                     });
                 } else if (item && Array.isArray(item.coordinate)) {
@@ -431,8 +900,11 @@
                         itemId: item.id,
                         text: item.text,
                         regionType: item.region_role || 'card',
-                        coordinate: item.coordinate,
-                        runtimeId: item.id
+                        coordinate: item.coordinate.map(p => ({ x: Number(p.x), y: Number(p.y) })),
+                        runtimeId: item.id,
+                        sourceType: 'legacy',
+                        sourceItemIndex: itemIndex,
+                        sourceRegionIndex: -1
                     });
                 }
             }
@@ -542,11 +1014,18 @@
                 }
             }
 
+            const pairStats = computePairDxStats(regions, 120);
+
             lines.push({ ok: badPoints === 0, msg: `坐标点格式检查（四点、整数）异常 ${badPoints}` });
             lines.push({ ok: outOfBounds === 0, msg: `越界点数量 ${outOfBounds}` });
             lines.push({ ok: duplicated === 0, msg: `重复热区数量 ${duplicated}` });
             lines.push({ ok: tinyAreas === 0, msg: `过小热区数量 ${tinyAreas}（card>=48x48, object>=36x36）` });
             lines.push({ ok: overlaps === 0, msg: `跨词重叠风险 ${overlaps}（重叠占比 > 10%）` });
+            lines.push({ ok: pairStats.missingPair === 0, msg: `card/object 配对缺失 ${pairStats.missingPair}` });
+            lines.push({ ok: pairStats.overDxCount === 0, msg: `配对横向偏移超阈值(>120px) ${pairStats.overDxCount}，max_dx=${pairStats.maxDx.toFixed(1)}` });
+            if (pairStats.overDxItems.length) {
+                lines.push({ ok: false, msg: `超阈值词条：${pairStats.overDxItems.join('；')}` });
+            }
 
             let score = 100;
             if (!(imageW === 1024 && imageH === 1024)) score -= 30;
@@ -556,6 +1035,8 @@
             score -= Math.min(10, duplicated * 2);
             score -= Math.min(10, tinyAreas * 2);
             score -= Math.min(10, overlaps * 2);
+            score -= Math.min(15, pairStats.missingPair * 5);
+            score -= Math.min(20, pairStats.overDxCount * 8);
             score = Math.max(0, score);
 
             const pass = score >= 89;
@@ -566,16 +1047,34 @@
 
         function renderTable(regions) {
             tbody.innerHTML = '';
+            const pairStats = computePairDxStats(regions, 120);
             regions.forEach((r, idx) => {
                 const rect = normalizeRect(r.coordinate);
+                const label = buildRegionLabel(r, idx);
+                const fallbackKey = `idx_${displayIndex(r, idx)}`;
+                const key = ((r.itemId || '').trim() || pairStats.fallbackMap.get(idx) || fallbackKey);
+                const pairDx = pairStats.pairDxByItemId[key];
+                const pairDxText = Number.isFinite(pairDx) ? pairDx.toFixed(1) : '-';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${displayIndex(r, idx)}</td>
-          <td>${r.itemId || '-'}</td>
-          <td>${r.text || '-'}</td>
-          <td>${r.regionType}</td>
+          <td>${escapeHtml(r.itemId || '-')}</td>
+          <td>${escapeHtml(r.text || '-')}</td>
+          <td>${escapeHtml(label)}</td>
+          <td>${pairDxText}</td>
           <td>${rect.minX},${rect.minY} → ${rect.maxX},${rect.maxY}</td>
         `;
+                if (idx === selectedRegionIndex) {
+                    tr.style.background = 'rgba(51, 182, 255, 0.18)';
+                }
+                tr.style.cursor = 'pointer';
+                tr.addEventListener('click', () => {
+                    selectedRegionIndex = idx;
+                    drawOverlay();
+                    renderTable(flatRegions);
+                    updateSelectedHint();
+                    updateActionButtonsState();
+                });
                 tbody.appendChild(tr);
             });
         }
@@ -584,6 +1083,7 @@
             if (!imageEl.naturalWidth || !imageEl.naturalHeight) return;
             const cssW = imageEl.clientWidth;
             const cssH = imageEl.clientHeight;
+            if (!cssW || !cssH) return;
 
             canvas.width = cssW;
             canvas.height = cssH;
@@ -602,19 +1102,149 @@
                 const y = rect.minY * sy;
                 const w = rect.w * sx;
                 const h = rect.h * sy;
+                const isSelected = i === selectedRegionIndex;
 
                 const color = typeColor(r.regionType);
 
                 ctx.fillStyle = color + '22';
                 ctx.strokeStyle = color;
-                ctx.lineWidth = 2;
+                ctx.lineWidth = isSelected ? 3 : 2;
                 ctx.fillRect(x, y, w, h);
                 ctx.strokeRect(x, y, w, h);
 
+                if (isSelected) {
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.setLineDash([5, 3]);
+                    ctx.strokeRect(x - 1, y - 1, w + 2, h + 2);
+                    ctx.setLineDash([]);
+                }
+
                 ctx.fillStyle = color;
                 ctx.font = '12px sans-serif';
-                ctx.fillText(`${displayIndex(r, i)}:${r.regionType}`, x + 4, Math.max(14, y + 13));
+                const label = buildRegionLabel(r, i);
+                const textY = Math.max(14, y + 13);
+                const textWidth = Math.ceil(ctx.measureText(label).width);
+                const bgW = Math.min(Math.max(textWidth + 8, 24), Math.max(24, cssW - x - 2));
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+                ctx.fillRect(x + 1, textY - 11, bgW, 14);
+                ctx.fillStyle = color;
+                ctx.fillText(label, x + 4, textY);
             });
+        }
+
+        function getPointerImageCoord(event) {
+            if (!imageEl.naturalWidth || !imageEl.clientWidth || !imageEl.clientHeight) return null;
+            const rect = imageEl.getBoundingClientRect();
+            const x = (event.clientX - rect.left) * (imageEl.naturalWidth / imageEl.clientWidth);
+            const y = (event.clientY - rect.top) * (imageEl.naturalHeight / imageEl.clientHeight);
+            return {
+                x: clamp(Math.round(x), 0, imageEl.naturalWidth - 1),
+                y: clamp(Math.round(y), 0, imageEl.naturalHeight - 1)
+            };
+        }
+
+        function hitTestRegionIndex(x, y) {
+            for (let i = flatRegions.length - 1; i >= 0; i -= 1) {
+                const rect = normalizeRect(flatRegions[i].coordinate);
+                if (x >= rect.minX && x <= rect.maxX && y >= rect.minY && y <= rect.maxY) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        function onCanvasMouseDown(event) {
+            if (!flatRegions.length) return;
+            const point = getPointerImageCoord(event);
+            if (!point) return;
+
+            const index = hitTestRegionIndex(point.x, point.y);
+            if (index < 0) {
+                selectedRegionIndex = -1;
+                drawOverlay();
+                renderTable(flatRegions);
+                updateSelectedHint();
+                updateActionButtonsState();
+                return;
+            }
+
+            event.preventDefault();
+            selectedRegionIndex = index;
+            if (!editMode) {
+                drawOverlay();
+                renderTable(flatRegions);
+                updateSelectedHint('已选中，点击“开始编辑”后可拖拽与放大/缩小');
+                updateActionButtonsState();
+                return;
+            }
+
+            const rect = normalizeRect(flatRegions[index].coordinate);
+            activeDrag = {
+                index,
+                startX: point.x,
+                startY: point.y,
+                originRect: rect
+            };
+            canvas.style.cursor = 'grabbing';
+            drawOverlay();
+            renderTable(flatRegions);
+            updateSelectedHint();
+            updateActionButtonsState();
+        }
+
+        function onWindowMouseMove(event) {
+            if (!activeDrag) return;
+            const point = getPointerImageCoord(event);
+            if (!point) return;
+
+            const region = flatRegions[activeDrag.index];
+            if (!region) return;
+
+            const dx = point.x - activeDrag.startX;
+            const dy = point.y - activeDrag.startY;
+
+            const rect = activeDrag.originRect;
+            const minX = clamp(Math.round(rect.minX + dx), 0, 1023 - rect.w);
+            const minY = clamp(Math.round(rect.minY + dy), 0, 1023 - rect.h);
+            const maxX = minX + rect.w;
+            const maxY = minY + rect.h;
+
+            region.coordinate = toRectCoordinate(minX, minY, maxX, maxY);
+            syncRegionToSource(region);
+            hasUnsavedChanges = true;
+            updateEditHint();
+            updateActionButtonsState();
+            drawOverlay();
+            renderTable(flatRegions);
+            updateSelectedHint();
+        }
+
+        function onWindowMouseUp() {
+            if (!activeDrag) return;
+            activeDrag = null;
+            if (editMode) canvas.style.cursor = 'grab';
+            refreshValidation();
+        }
+
+        function scheduleOverlayDrawRetry(maxAttempts = 24) {
+            if (drawRetryTimer) {
+                clearTimeout(drawRetryTimer);
+                drawRetryTimer = null;
+            }
+
+            let attempt = 0;
+            const run = () => {
+                if (!flatRegions.length || !imageEl.naturalWidth || !imageEl.naturalHeight) return;
+                if (imageEl.clientWidth > 0 && imageEl.clientHeight > 0) {
+                    drawOverlay();
+                    return;
+                }
+                attempt += 1;
+                if (attempt >= maxAttempts) return;
+                drawRetryTimer = setTimeout(run, 40);
+            };
+
+            run();
         }
 
         async function loadImage() {
@@ -658,13 +1288,19 @@
                 const data = await loadJson();
                 if (!Array.isArray(data)) throw new Error('JSON 根节点必须是数组');
 
+                currentJsonData = data;
+                originalJsonData = deepCloneJson(data);
                 flatRegions = flattenItemsData(data);
+                selectedRegionIndex = -1;
+                activeDrag = null;
+                hasUnsavedChanges = false;
                 drawOverlay();
+                scheduleOverlayDrawRetry();
                 renderTable(flatRegions);
-
-                const result = validate(imageEl.naturalWidth, imageEl.naturalHeight, flatRegions);
-                showChecks(result.lines);
-                renderScore(result.score, result.pass);
+                refreshValidation();
+                updateEditHint();
+                updateSelectedHint();
+                updateActionButtonsState();
                 savePaths();
             } catch (err) {
                 showChecks([{ ok: false, msg: err.message || String(err) }]);
@@ -711,6 +1347,33 @@
             }
         }
 
+        function applyQueryParams() {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                if (!params.toString()) return { autoload: false };
+
+                const image = params.get('image') || '';
+                const json = params.get('json') || '';
+                const baseRoot = params.get('baseRoot') || '';
+                const scene = params.get('scene') || '';
+                const card = params.get('card') || '';
+                const ext = params.get('ext') || '';
+
+                if (image) imageUrlEl.value = image;
+                if (json) jsonPathEl.value = json;
+                if (baseRoot) baseRootEl.value = baseRoot;
+                if (scene) sceneSlugEl.value = scene;
+                if (card) cardSlugEl.value = card;
+                if (ext) imageExtEl.value = ext;
+
+                const autoloadRaw = (params.get('autoload') || '').toLowerCase();
+                const autoload = autoloadRaw === '1' || autoloadRaw === 'true' || autoloadRaw === 'yes';
+                return { autoload };
+            } catch (e) {
+                return { autoload: false };
+            }
+        }
+
         function applyDroppedFiles(files) {
             let imageFound = false;
             let jsonFound = false;
@@ -743,6 +1406,13 @@
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             flatRegions = [];
+            currentJsonData = null;
+            originalJsonData = null;
+            jsonWritebackHandle = null;
+            hasUnsavedChanges = false;
+            activeDrag = null;
+            selectedRegionIndex = -1;
+            lastValidationLines = [];
             tbody.innerHTML = '';
             checksEl.innerHTML = '';
             scoreBoxEl.className = 'score-box';
@@ -757,6 +1427,10 @@
             imageExtEl.value = '';
             jsonPathEl.value = '';
             jsonTextEl.value = '';
+            setEditMode(false);
+            updateEditHint();
+            updateSelectedHint();
+            updateActionButtonsState();
         }
 
         ['dragenter', 'dragover'].forEach(evt => {
@@ -788,13 +1462,27 @@
             if (flatRegions.length) drawOverlay();
         });
 
+        canvas.addEventListener('mousedown', onCanvasMouseDown);
+        window.addEventListener('mousemove', onWindowMouseMove);
+        window.addEventListener('mouseup', onWindowMouseUp);
+
+        imageEl.addEventListener('load', () => {
+            if (flatRegions.length) scheduleOverlayDrawRetry();
+        });
+
         restorePaths();
+        setEditMode(false);
+        updateEditHint();
+        const queryOptions = applyQueryParams();
         if (!baseRootEl.value.trim()) {
             baseRootEl.value = '/Users/qisd/Documents/development/my_project/kiki_chain/kiki_web/doc/card-generation/scene-info';
         }
         if (!sceneSlugEl.value.trim()) sceneSlugEl.value = 'demo_animals';
         if (!cardSlugEl.value.trim()) cardSlugEl.value = 'kiki_dongwuyuan';
         if (!imageExtEl.value.trim()) imageExtEl.value = 'jpg';
+        if (queryOptions.autoload) {
+            loadAndDraw();
+        }
     </script>
 </body>
 

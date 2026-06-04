@@ -1,41 +1,40 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Global target directories for all AI assistants
 CLAUDE_TARGET="$HOME/.claude/skills"
-VSCODE_PROMPTS_BASE_DEFAULT="${VSCODE_PROMPTS_BASE:-$HOME/Library/Application Support/Code/User/prompts}"
-VSCODE_PROMPTS_NAME="${VSCODE_PROMPTS_NAME:-just-common-skills}"
-VSCODE_PROMPTS_TARGET="${VSCODE_PROMPTS_TARGET:-$VSCODE_PROMPTS_BASE_DEFAULT/$VSCODE_PROMPTS_NAME}"
+COPILOT_TARGET="$HOME/.github/skills"
+CODEX_TARGET="$HOME/.codex/skills"
+CURSOR_TARGET="$HOME/.cursor/skills"
+GEMINI_TARGET="$HOME/.gemini/skills"
 
 usage() {
   cat <<'EOF'
-Uninstall globally linked/copied shared skills.
+Uninstall globally linked shared skills from all AI programming assistants.
 
 Usage:
   scripts/uninstall-skills.sh [options]
 
 Options:
-  --with-vscode-prompts  Also remove VS Code prompts mirror path.
   --force                Remove without confirmation.
   -h, --help             Show help.
 
-Environment overrides:
-  VSCODE_PROMPTS_BASE    Base prompts directory (default: ~/Library/Application Support/Code/User/prompts)
-  VSCODE_PROMPTS_NAME    Subdirectory name under base (default: just-common-skills)
-  VSCODE_PROMPTS_TARGET  Full target path. If set, overrides BASE/NAME composition.
+Uninstalled targets (all by default):
+  1) ~/.claude/skills    (Claude Code)
+  2) ~/.github/skills    (GitHub Copilot)
+  3) ~/.codex/skills     (Codex)
+  4) ~/.cursor/skills    (Cursor / OpenAI)
+  5) ~/.gemini/skills    (Google Gemini)
 
 Examples:
-  # Uninstall from Claude Code
+  # Uninstall from all AI assistants
   ./scripts/uninstall-skills.sh
-
-  # Uninstall from both Claude Code and VS Code
-  ./scripts/uninstall-skills.sh --with-vscode-prompts
 
   # Force uninstall without confirmation
   ./scripts/uninstall-skills.sh --force
 EOF
 }
 
-WITH_VSCODE_PROMPTS="false"
 FORCE_MODE="false"
 
 confirm_remove() {
@@ -50,8 +49,10 @@ confirm_remove() {
 
 remove_one() {
   local target="$1"
+  local name="$2"
+
   if [[ ! -e "$target" && ! -L "$target" ]]; then
-    echo "⏭️  Skip (not found): $target"
+    echo "⏭️  $name: not found, skipping"
     return 0
   fi
 
@@ -59,26 +60,22 @@ remove_one() {
   if [[ -L "$target" ]]; then
     local link_target
     link_target="$(readlink "$target")"
-    echo "Found symlink: $target -> $link_target"
+    echo "Found $name symlink: $target -> $link_target"
   else
-    echo "Found directory: $target"
+    echo "Found $name directory: $target"
   fi
 
   if confirm_remove "$target"; then
     rm -rf "$target"
-    echo "🗑️  Removed: $target"
+    echo "🗑️  $name: removed"
   else
-    echo "⏭️  Skip: $target"
+    echo "⏭️  $name: skipped"
   fi
 }
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --with-vscode-prompts)
-      WITH_VSCODE_PROMPTS="true"
-      shift
-      ;;
     --force)
       FORCE_MODE="true"
       shift
@@ -95,27 +92,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "🗑️  Just-Common-Skills Uninstaller"
-echo "=================================="
+echo "🗑️  Just-Common-Skills Global Uninstaller"
+echo "=========================================="
 echo ""
 
-# Uninstall from Claude Code
-echo "Uninstalling from Claude Code..."
-remove_one "$CLAUDE_TARGET"
+echo "Uninstalling from all AI assistants..."
+echo ""
 
-# Uninstall from VS Code (optional)
-if [[ "$WITH_VSCODE_PROMPTS" == "true" ]]; then
-  echo ""
-  echo "Uninstalling from VS Code prompts..."
-  remove_one "$VSCODE_PROMPTS_TARGET"
-fi
+remove_one "$CLAUDE_TARGET" "Claude Code"
+remove_one "$COPILOT_TARGET" "GitHub Copilot"
+remove_one "$CODEX_TARGET" "Codex"
+remove_one "$CURSOR_TARGET" "Cursor"
+remove_one "$GEMINI_TARGET" "Google Gemini"
 
 echo ""
 echo "✅ Uninstall complete!"
-echo ""
-echo "Note: This only removes global installations."
-echo "To remove project-specific injections, delete the symlinks manually:"
-echo "  rm -rf <project>/.github/skills"
-echo "  rm -rf <project>/.claude/skills"
-echo "  rm -rf <project>/.ai/common-prompt"
-echo "  rm -rf <project>/.ai/system-platform"
