@@ -3,207 +3,277 @@ name: just-feature-doc-generator
 description: |
   从当前项目代码反向生成某个功能的文档包：需求文档、逻辑文档、接口文档。
   输出严格采用业务抽象视角，不暴露代码细节。
-  当用户说“分析某某功能并出文档”“根据代码生成需求和接口文档”“梳理当前功能逻辑”时自动触发。
+  当用户说"分析某某功能并出文档""根据代码生成需求和接口文档""梳理当前功能逻辑"时自动触发。
 ---
 
 # Feature Doc Generator
 
-## 目标
+---
 
-给定一个功能名或功能范围，从现有代码中提取真实行为，输出业务可读、跨角色可协作的结构化文档，统一落盘到项目 `doc/` 目录。
+## 一、三种文档的定位
 
-文档默认读者：产品、业务、测试、开发。
+每次生成文档前，先明确三种文档的**读者和核心产出**：
 
-文档表达要求：
+| 文档 | 定位 | 主要读者 | 核心产出 |
+|------|------|---------|---------|
+| `01-requirement.md` | **产品需求规格**：页面上有什么、用户能做什么 | 产品、测试、UI | 每个 UI 区块 + 每个操作点的完整拆解 |
+| `02-logic.md` | **业务逻辑规格**：用户操作触发哪些流程 | 业务分析师、开发 | 业务流程图 + 时序图 + 规则（纯文字） |
+| `03-api.md` | **接口契约**：每个接口对应哪个 UI 操作 | 前后端、测试 | 按 UI 区块分组的接口清单 + 完整字段 |
 
-1. 用业务术语描述，不使用代码术语。
-2. 不出现类名、函数名、变量名、文件路径、SQL 片段、代码片段。
-3. 只写“系统行为与业务规则”，不写“代码如何实现”。
+---
 
-## 输入
+## 二、三种文档的绝对禁止项
+
+以下内容**禁止出现在任何一种文档中**：
+
+- 代码块（任何语言）
+- 函数名、方法名（如 loadPlanTemplates、createTask）
+- 组件名（如 BeginnerComposerCard、EmployeeSkillsDialog）
+- 变量名（如 rawInputExample、planJson.steps、isActive）
+- 文件路径（如 src/views/Home.vue）
+- 类型定义（如 interface PlanTemplate {...}）
+- 字段内部命名（如"通过 planTemplateId 传入"）
+
+**正确的替换方式举例**：
+
+| 禁止写 | 应该写 |
+|--------|---------|
+| rawInputExample 字段 | 模板的示例输入文本 |
+| planJson.steps 数组 | 执行步骤列表 |
+| needsConfirmation: false | 任务创建后自动进入执行状态，无需等待用户确认 |
+| BeginnerComposerCard | 工作台输入区 |
+| status === 'plan_ready' | 当任务进入「计划已生成」状态时 |
+
+---
+
+## 三、每种文档的结构规范
+
+### 3.1 需求文档 01-requirement.md
+
+**这份文档回答：这个功能的页面上有什么？每个区块、每个按钮、每个状态是什么？**
+
+必须包含的章节：
+
+```
+1. 功能概述 — 一句话：是什么功能、给谁用、解决什么问题
+2. 目标用户与使用场景 — 用户角色 + 2-3 个典型场景 + 使用前提
+3. 页面结构与功能拆解 — ⚠️ 核心章节，必须逐 UI 区块拆解
+
+   每个区块必须包含：
+   [区块名称]（业务名称，不用组件名）
+     展示内容：每个可见元素逐一列出
+     交互操作：每个操作单独描述
+       操作名称
+       - 触发条件：什么情况下可见/可点
+       - 操作步骤：用户如何操作
+       - 系统响应：系统做了什么
+     状态说明：空态/加载/有数据/错误时的展示差异
+
+4. 功能范围 — 包含（In Scope）/ 不包含（Out of Scope）
+5. 验收标准 — 格式：「当 [前提] 时，[用户操作]，系统 [表现]」
+6. 限制与约束 — 数量限制、权限限制、状态限制
+```
+
+---
+
+### 3.2 逻辑文档 02-logic.md
+
+**这份文档回答：用户操作触发哪些业务流程？系统如何一步步响应？关键规则是什么？**
+
+⚠️ 严禁出现代码块、函数名、组件名、变量名。
+
+必须包含的章节：
+
+```
+1. 整体业务流程图 — Mermaid flowchart
+   - 参与方用业务角色命名（用户/工作台界面/任务服务/成员服务）
+   - 覆盖主路径 + 关键分支 + 异常路径
+
+2. 主流程描述 — 每个主流程用有序步骤描述
+   步骤 1：[角色] [动作]
+   步骤 2：[系统] [响应]
+
+3. 关键业务规则
+   格式：「[触发条件] 时，[规则内容]」
+
+4. 状态流转（若有）— Mermaid stateDiagram
+
+5. 异常流程与降级策略
+   | 异常场景 | 处理策略 | 用户可见影响 |
+
+6. 关键场景时序图 — Mermaid sequenceDiagram
+   - 覆盖最复杂的操作路径
+   - 参与方：用户/工作台界面/业务服务（业务语言）
+
+7. 架构影响（若有）— 模块耦合风险 + 演进建议
+```
+
+---
+
+### 3.3 接口文档 03-api.md
+
+**这份文档回答：这个功能用到哪些接口？每个接口对应哪个用户操作？请求和响应字段是什么？**
+
+⚠️ 按 UI 区块分组，不按技术模块分组。每个接口必须标注"触发该接口的用户操作"。
+
+必须包含的章节：
+
+```
+1. 接口总览（按 UI 区块分组）
+   | 接口名称 | 方法 | 路径 | 触发该接口的用户操作 | 所在 UI 区块 |
+
+2. 接口详情（每个接口一节）
+   接口名称（业务描述）
+     调用时机：用户做了什么才触发
+     所属区块：在哪个 UI 区块下
+     请求参数
+       | 参数位置 | 参数名 | 类型 | 必填 | 业务含义 |
+     响应字段
+       | 字段名 | 类型 | 业务含义 |
+     错误情况
+       | 状态码 | 说明 | 用户影响 |
+
+3. 接口变更历史
+   | 版本 | 日期 | 变更说明 |
+```
+
+---
+
+## 四、输入
 
 必须至少有一项：
 
-1. 功能名称（例如：用户登录、订单支付、收藏夹）
-2. 入口位置（模块名/目录/API 路径/页面名）
-3. 关键词（类名、函数名、路由名）
+1. 功能名称（例如：用户登录、订单支付、计划模板快捷入口）
+2. 入口位置（模块名/页面名/路由路径）
+3. 关键词（用于定位代码范围）
 
 若以上输入都无法在代码中匹配到对应功能：
+1. 明确返回"未匹配到功能范围"
+2. 给出建议输入
+3. 等用户补充后再继续
 
-1. 明确返回“未匹配到功能范围”。
-2. 给出建议输入（模块名、接口路径、页面名）。
-3. 等用户补充后再继续执行。
+---
 
-## 输出目录
+## 五、输出目录
 
-`doc/feature-docs/<feature>/`
+doc/feature-docs/<feature>/
 
-固定输出：
+固定输出：01-requirement.md、02-logic.md、03-api.md
 
-1. `01-requirement.md`
-2. `02-logic.md`
-3. `03-api.md`
+---
 
-## 执行流程
+## 六、执行流程
 
 ### Step 1: 功能范围确认
+1. 用用户给的功能名定位代码范围
+2. 若范围不清晰，先追问关键问题再继续
+3. 明确记录"包含范围/不包含范围"
 
-1. 用用户给的功能名定位代码范围。
-2. 若范围不清晰，先追问 3 个关键问题再继续。
-3. 记录“包含范围/不包含范围”。
+### Step 2: 代码扫描，建立内部证据映射
+1. 识别涉及的路由、视图、API 调用
+2. 建立"代码行为 → 业务行为"的翻译表（仅内部使用，不写入文档）
+3. 重要：将代码中的每个操作翻译为业务动作后再写文档
 
-### Step 2: 代码与文档扫描
+### Step 3: 生成需求文档
+按 3.1 结构生成 01-requirement.md
+重点：逐区块拆解 UI，每个交互点单独列出，不含任何代码引用
 
-1. 扫描当前代码中的相关模块、路由、服务、数据模型。
-2. 同步扫描 `doc/` 下已存在文档，标记与代码不一致点。
-3. 在内部保留证据映射（用于校验结论）；对外文档只输出业务结论，不输出代码定位信息。
-
-### Step 3: 生成当前需求文档
-
-生成 `01-requirement.md`，至少包含：
-
-1. 功能目标（基于代码推断）
-2. 目标用户与使用场景
-3. 当前支持能力（In Scope）
-4. 当前未支持能力（Out of Scope）
-5. 验收标准（以“当前代码可验证”为准）
-6. 已知限制与风险
-
-### Step 4: 生成功能逻辑文档
-
-生成 `02-logic.md`，至少包含：
-
-1. 业务流程（主流程 + 异常流程）
-2. 模块协作关系（谁调用谁）
-3. 状态变化与关键规则
-4. 数据流向（输入 -> 处理 -> 输出）
-5. 错误处理与降级策略
-6. 逻辑流程图（必须有，建议 Mermaid flowchart）
-7. 关键场景时序图（必须有，建议 Mermaid sequenceDiagram）
-
-图示要求：
-
-1. 参与方使用业务角色命名（例如：用户、客户端、业务系统、风控系统）。
-2. 不出现代码对象命名（类/方法/函数/表名）。
-3. 图与正文术语保持一致。
+### Step 4: 生成逻辑文档
+按 3.2 结构生成 02-logic.md
+重点：flowchart + sequenceDiagram，全部业务语言，无代码
 
 ### Step 5: 生成接口文档
+按 3.3 结构生成 03-api.md
+重点：每个 API 标注对应 UI 操作，字段含义用业务语言描述
 
-生成 `03-api.md`，至少包含：
+### Step 6: 质量检验
+必须通过的检查：
+- [ ] 三个文档均不含代码片段
+- [ ] 三个文档均不含函数名、组件名、变量名
+- [ ] 01-requirement.md 包含逐区块 UI 拆解（每个操作单独列出）
+- [ ] 02-logic.md 包含 flowchart 和 sequenceDiagram
+- [ ] 03-api.md 每个接口标注了触发它的 UI 操作
+- [ ] 所有接口请求和响应字段完整
 
-1. 接口总览（接口名称、业务用途、调用方）
-2. 基础请求信息（协议、Host/Base URL、Method、Path）
-3. 请求头（必填 Header、鉴权 Header、签名规则如适用）
-4. 路径参数（Path Params）
-5. 查询参数（Query Params）
-6. 请求体（Body 字段、类型、必填、默认值、边界值）
-7. 成功响应（状态码、响应体结构、字段语义）
-8. 失败响应（错误码、错误语义、触发条件、处理建议）
-9. 鉴权与权限要求（角色、数据权限范围）
-10. 幂等性、限流、超时、重试策略（若可识别）
-11. 示例请求/响应载荷（完整可读样例）
-12. 版本与兼容性（是否破坏性变更、向后兼容说明）
-13. 与历史文档差异（新增/修改/废弃接口）
+---
 
-接口文档表达约束：
+## 七、更新策略
 
-1. 以“业务契约”描述，不描述实现细节。
-2. 参数说明用业务含义，不引用内部字段命名来源。
-3. 错误语义优先讲用户可感知结果与处理建议。
-4. 接口字段定义必须完整，不允许只写“见代码”。
-5. 请求和响应样例必须与字段定义一致。
+用户说"修改了这个功能，更新文档"时：
+1. 增量扫描改动
+2. 只更新受影响章节
+3. 在文档末尾追加 Update Log（日期 + 改动摘要）
 
-建议输出结构（每个接口都使用）：
+---
 
-1. 接口标识：名称、Method、Path
-2. 接口说明：业务目的、调用时机
-3. 请求定义：Header/Path/Query/Body
-4. 响应定义：成功响应 + 失败响应
-5. 约束定义：鉴权、权限、幂等、限流、超时
-6. 示例：请求样例、成功样例、失败样例
-7. 变更记录：版本与兼容性
+## 八、反模式举例
 
-### Step 6: 架构影响（写入逻辑文档）
+### 需求文档反模式
 
-若功能存在跨模块依赖或边界问题，写入 `02-logic.md` 的“架构影响”小节：
+❌ 禁止：用字段名描述展示内容
+> 展示 rawInputExample 字段，作为输入框预填值
 
-1. 当前架构位置
-2. 依赖方向是否合理
-3. 模块耦合风险
-4. 建议拆分与演进路线
+✅ 正确：
+> 输入框预填该模板的示例输入文本，用户可自行修改
 
-## 质量门禁
+---
 
-生成文档前，必须满足：
+❌ 禁止：用 TypeScript 定义数据结构
+> PlanTemplate 包含 id、name、planJson.steps 等字段
 
-1. 每条结论都能映射到代码证据。
-2. 不臆造代码中不存在的能力。
-3. 不把“计划能力”写成“已实现能力”。
-4. 文档语言清晰、可交付给开发/产品/测试直接使用。
-5. 最终文档中不包含任何代码片段或代码级标识。
-6. `02-logic.md` 必须包含一张逻辑流程图和一张时序图。
-7. `03-api.md` 必须覆盖请求与响应的完整契约字段，不得缺失关键参数说明。
+✅ 正确：
+> 每条模板包含：名称、描述、示例输入、执行步骤列表、团队成员配置
 
-## 更新策略
+---
 
-当用户说“修改了这个功能，更新文档”时：
+❌ 禁止：笼统描述，不拆解 UI
+> 用户可以管理团队成员
 
-1. 增量扫描改动文件。
-2. 只更新受影响章节。
-3. 在文档末尾增加 `Update Log`（日期 + 改动摘要 + 证据文件）。
+✅ 正确：
+> 自动组队区块
+> - 展示当前任务成员卡片（头像、姓名、职位名称）
+> - 点击"展示更多组员"：打开成员选择弹窗（含我的员工/员工市场两个标签）
+> - 点击成员卡片右侧"移除"：从任务中移除该成员
+> - 点击成员头像：打开该成员的技能管理弹窗
 
-## Three-Question Design Test
+### 逻辑文档反模式
+
+❌ 禁止：包含代码块
+> async function loadPlanTemplates() { ... }
+
+✅ 正确：
+> 页面加载时，系统自动拉取用户的计划模板列表（最多 10 条），同时批量查询涉及的技能名称。若拉取失败，静默忽略，快捷按钮区不显示。
+
+---
+
+❌ 禁止：流程图使用组件名
+> BeginnerComposerCard → API → planTemplatesLoaded
+
+✅ 正确：
+> 工作台界面 → 模板服务 → 技能服务
+
+---
+
+## 九、Three-Question Design Test
 
 ### Q1: What exact job does this skill perform?
-Reverse-engineer feature documentation from existing code: extract real behavior, generate business-readable requirement/logic/API docs in `doc/feature-docs/<feature>/`, using business terminology only (no code names, file paths, or implementation details), with mandatory flowcharts and sequence diagrams.
+Reverse-engineer feature documentation from existing code into three business-readable docs:
+- 01-requirement.md: product spec with detailed UI breakdown (every section, button, state)
+- 02-logic.md: business logic with flowcharts and sequence diagrams (no code)
+- 03-api.md: API contract with each endpoint mapped to the UI action that triggers it
+All outputs use business terminology only—no code, no function names, no component names.
 
-### Q2: When should it activate? List at least 5 trigger phrases.
-1. “analyze this feature and generate docs” or “document this feature”
-2. “generate requirement and API docs from code”
-3. “reverse-engineer feature documentation”
-4. “extract business logic and write docs”
-5. “create feature docs for existing implementation”
+### Q2: When should it activate?
+1. "分析某功能并出文档" / "document this feature"
+2. "根据代码生成需求和接口文档"
+3. "梳理当前功能逻辑" / "重新梳理一下这个功能文档"
+4. "把这个功能的需求整理出来"
+5. "这个页面有哪些功能点，帮我出文档"
 
-### Q3: What does perfect output look like? Include one concrete output example.
-Perfect output includes: three complete docs (01-requirement.md with scope/acceptance criteria, 02-logic.md with flowchart+sequence diagram using business terms, 03-api.md with full contract including request/response/errors/examples), all using business language with no code references.
+### Q3: What does perfect output look like?
 
-Example:
-```
-✅ Feature Documentation Generated: User Login
+Perfect 01-requirement.md: 每个 UI 区块独立章节，每个交互操作单独列出（触发条件 + 步骤 + 系统响应），无任何代码引用。
 
-Output:
-- doc/feature-docs/user-login/01-requirement.md
-  - Goal: Allow users to authenticate with email/password
-  - In Scope: Login, logout, session management
-  - Out of Scope: Social login, 2FA
-  - Acceptance: User can login and access protected resources
+Perfect 02-logic.md: 完整 flowchart（业务角色命名）+ sequenceDiagram（覆盖复杂场景）+ 有序步骤描述，无代码。
 
-- doc/feature-docs/user-login/02-logic.md
-  - Main flow: User submits credentials → System validates → Session created
-  - Exception flow: Invalid credentials → Error message → Retry allowed
-  - Flowchart: [Mermaid diagram with User/Client/Auth System/Database]
-  - Sequence diagram: [Login flow with business actors]
-
-- doc/feature-docs/user-login/03-api.md
-  - POST /auth/login
-  - Request: { email, password }
-  - Success: { token, expiresAt, user: { id, name, role } }
-  - Errors: 401 Invalid credentials, 429 Too many attempts
-  - Example request/response included
-
-All docs use business terminology. No class names, file paths, or code snippets.
-```
-
-## 反模式（禁止）
-
-- ❌ 只看文件名就下结论，不读实现逻辑
-- ❌ 把猜测当事实写进需求文档
-- ❌ 生成接口文档但不核对实际参数/返回
-- ❌ 覆盖整个文档而不保留更新日志
-- ❌ 在文档中粘贴代码、SQL、类名、函数名、文件路径
-- ❌ 用”实现细节”替代”业务规则和契约”
-
-## 与 just-dev-pipeline 的协作
-
-1. 可在 `just-dev-pipeline` 的第 2 步（现状分析）或第 6 步（提交前收口）调用本 skill。
-2. 若用户仅要求”先把某功能文档梳理出来”，优先调用本 skill。
+Perfect 03-api.md: 先按 UI 区块分组汇总，再每接口单独一节，含调用时机/所属区块/完整请求响应字段，无代码。

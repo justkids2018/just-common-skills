@@ -21,6 +21,7 @@ Use one orchestrator skill plus seven worker skills:
 ## CI/CD & Tooling Skills
 
 - `just-github-workflows` — Android/iOS APK 打包、Docker 构建部署、Flutter CI 四条 workflow 模板，新项目快速复制
+- `just-ui-compliance` — 移动端优先（iOS HIG）+ Web Apple 风格 UI 规范检测与修复，支持项目规范优先覆盖
 
 Guideline:
 

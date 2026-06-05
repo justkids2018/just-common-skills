@@ -6,9 +6,8 @@ const path = require("node:path");
 const rootDir = path.resolve(__dirname, "..");
 
 const ACTIONS = {
-    i: ["scripts/quick-install.sh"],
-    install: ["scripts/quick-install.sh"],
-    inject: ["scripts/inject-current-project.sh"],
+    i: ["scripts/install-skills.sh"],
+    install: ["scripts/install-skills.sh"],
     u: ["scripts/uninstall-skills.sh"],
     uninstall: ["scripts/uninstall-skills.sh"],
 };
@@ -16,10 +15,18 @@ const ACTIONS = {
 function printHelp() {
     console.log("jcs - just-common-skills");
     console.log("");
-    console.log("Usage:");
-    console.log("  jcs i");
-    console.log("  jcs inject <projectPath> [--force] [--reference-entry]");
-    console.log("  jcs u [--force] [--with-vscode-prompts]");
+    console.log("Global installation to all AI assistants:");
+    console.log("  jcs i               # Install to all AI assistants");
+    console.log("  jcs i --force       # Force install without confirmation");
+    console.log("  jcs u               # Uninstall from all AI assistants");
+    console.log("  jcs u --force       # Force uninstall without confirmation");
+    console.log("");
+    console.log("Targets:");
+    console.log("  • ~/.claude/skills    (Claude Code)");
+    console.log("  • ~/.github/skills    (GitHub Copilot)");
+    console.log("  • ~/.codex/skills     (Codex)");
+    console.log("  • ~/.cursor/skills    (Cursor / OpenAI)");
+    console.log("  • ~/.gemini/skills    (Google Gemini)");
 }
 
 const [, , cmd, ...args] = process.argv;

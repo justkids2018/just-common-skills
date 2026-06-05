@@ -1,62 +1,49 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install shared skills for local Copilot/Claude runtimes by linking this repo's
-# skills directory into standard global paths.
-#
-# Default behavior:
-# - Link to: ~/.claude/skills
-# Optional:
-# - --with-vscode-prompts: also link to VS Code prompts mirror directory
-# - --copy: copy files instead of symlink
-# - --force: replace existing target without interactive prompt
+# Install shared skills globally to all AI programming assistants
+# Supports: Claude Code, GitHub Copilot, Codex
+# Default: symlink mode for auto-update
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HUB_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SOURCE_SKILLS="$HUB_ROOT/skills"
 
+# Global target directories for all AI assistants
 CLAUDE_TARGET="$HOME/.claude/skills"
-VSCODE_PROMPTS_BASE_DEFAULT="${VSCODE_PROMPTS_BASE:-$HOME/Library/Application Support/Code/User/prompts}"
-VSCODE_PROMPTS_NAME="${VSCODE_PROMPTS_NAME:-just-common-skills}"
-VSCODE_PROMPTS_TARGET="${VSCODE_PROMPTS_TARGET:-$VSCODE_PROMPTS_BASE_DEFAULT/$VSCODE_PROMPTS_NAME}"
+COPILOT_TARGET="$HOME/.github/skills"
+CODEX_TARGET="$HOME/.codex/skills"
+CURSOR_TARGET="$HOME/.cursor/skills"
+GEMINI_TARGET="$HOME/.gemini/skills"
 
-WITH_VSCODE_PROMPTS="false"
-COPY_MODE="false"
 FORCE_MODE="false"
 
 usage() {
   cat <<'EOF'
-Install shared skills from this repository.
+Install shared skills globally to all AI programming assistants.
 
 Usage:
   scripts/install-skills.sh [options]
 
 Options:
-  --with-vscode-prompts  Also install to VS Code prompts mirror path.
-  --copy                 Copy files instead of creating symlink (not recommended).
   --force                Replace existing targets without confirmation.
   -h, --help             Show this help.
 
-Environment overrides:
-  VSCODE_PROMPTS_BASE    Base prompts directory (default: ~/Library/Application Support/Code/User/prompts)
-  VSCODE_PROMPTS_NAME    Subdirectory name under base (default: just-common-skills)
-  VSCODE_PROMPTS_TARGET  Full target path. If set, overrides BASE/NAME composition.
-
-Installed targets:
-  1) ~/.claude/skills
-  2) $VSCODE_PROMPTS_TARGET (optional)
+Installed targets (all by default):
+  1) ~/.claude/skills    (Claude Code)
+  2) ~/.github/skills    (GitHub Copilot)
+  3) ~/.codex/skills     (Codex)
+  4) ~/.cursor/skills    (Cursor / OpenAI)
+  5) ~/.gemini/skills    (Google Gemini)
 
 Notes:
-  - Symlink mode (default) keeps skills always up to date with this repo.
-  - Copy mode creates a snapshot and does not auto-sync.
-  - Recommended: use symlink mode for automatic updates.
+  - Uses symlink mode to keep skills always up to date with this repo.
+  - Automatically creates target directories if they don't exist.
+  - Recommended for centralized skill management across all AI assistants.
 
 Examples:
-  # Install to Claude Code (symlink mode)
+  # Install to all AI assistants (default)
   ./scripts/install-skills.sh
-
-  # Install to both Claude Code and VS Code
-  ./scripts/install-skills.sh --with-vscode-prompts
 
   # Force replace existing installation
   ./scripts/install-skills.sh --force
@@ -76,71 +63,59 @@ confirm_replace() {
 install_one() {
   local source="$1"
   local target="$2"
+  local name="$3"
 
+  # Force create parent directory
   mkdir -p "$(dirname "$target")"
 
   if [[ -e "$target" || -L "$target" ]]; then
     if ! confirm_replace "$target"; then
-      echo "⏭️  Skip: $target"
+      echo "⏭️  Skip: $name ($target)"
       return 0
     fi
     rm -rf "$target"
   fi
 
-  if [[ "$COPY_MODE" == "true" ]]; then
-    mkdir -p "$target"
-    cp -R "$source"/. "$target"/
-    echo "📦 Copied: $source -> $target"
-  else
-    ln -s "$source" "$target"
-    echo "🔗 Linked: $target -> $source"
-  fi
+  # Always use symlink mode
+  ln -s "$source" "$target"
+  echo "🔗 $name: $target -> $source"
 }
 
 verify_installation() {
   local target="$1"
-  local mode="$2"
+  local name="$2"
 
   if [[ ! -e "$target" ]]; then
-    echo "❌ Verification failed: $target does not exist"
+    echo "❌ $name: target does not exist"
     return 1
   fi
 
-  if [[ "$mode" == "symlink" ]]; then
-    if [[ ! -L "$target" ]]; then
-      echo "❌ Verification failed: $target is not a symlink"
-      return 1
-    fi
-    local link_target
-    link_target="$(readlink "$target")"
-    if [[ "$link_target" != "$SOURCE_SKILLS" ]]; then
-      echo "❌ Verification failed: $target points to wrong location"
-      return 1
-    fi
+  if [[ ! -L "$target" ]]; then
+    echo "❌ $name: not a symlink"
+    return 1
+  fi
+
+  local link_target
+  link_target="$(readlink "$target")"
+  if [[ "$link_target" != "$SOURCE_SKILLS" ]]; then
+    echo "❌ $name: points to wrong location"
+    return 1
   fi
 
   local skill_count
   skill_count=$(find "$target/just-"* -maxdepth 0 -type d 2>/dev/null | wc -l | tr -d ' ')
   if [[ "$skill_count" -eq 0 ]]; then
-    echo "❌ Verification failed: no skills found in $target"
+    echo "❌ $name: no skills found"
     return 1
   fi
 
-  echo "✅ Verified: $target ($skill_count skills)"
+  echo "✅ $name: verified ($skill_count skills)"
   return 0
 }
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --with-vscode-prompts)
-      WITH_VSCODE_PROMPTS="true"
-      shift
-      ;;
-    --copy)
-      COPY_MODE="true"
-      shift
-      ;;
     --force)
       FORCE_MODE="true"
       shift
@@ -170,40 +145,45 @@ if [[ "$SKILL_COUNT" -eq 0 ]]; then
   exit 3
 fi
 
-echo "📦 Just-Common-Skills Installer"
-echo "================================"
+echo "📦 Just-Common-Skills Global Installer"
+echo "======================================="
 echo "Source: $HUB_ROOT"
 echo "Skills: $SKILL_COUNT"
-echo "Mode:   $([ "$COPY_MODE" == "true" ] && echo "copy (snapshot)" || echo "symlink (auto-update)")"
+echo "Mode:   symlink (auto-update)"
 echo ""
 
-# Install to Claude Code
-echo "Installing to Claude Code..."
-install_one "$SOURCE_SKILLS" "$CLAUDE_TARGET"
+# Install to all AI assistants
+echo "Installing to all AI assistants..."
+echo ""
 
-# Install to VS Code (optional)
-if [[ "$WITH_VSCODE_PROMPTS" == "true" ]]; then
-  echo ""
-  echo "Installing to VS Code prompts..."
-  install_one "$SOURCE_SKILLS" "$VSCODE_PROMPTS_TARGET"
-fi
+install_one "$SOURCE_SKILLS" "$CLAUDE_TARGET" "Claude Code"
+install_one "$SOURCE_SKILLS" "$COPILOT_TARGET" "GitHub Copilot"
+install_one "$SOURCE_SKILLS" "$CODEX_TARGET" "Codex"
+install_one "$SOURCE_SKILLS" "$CURSOR_TARGET" "Cursor"
+install_one "$SOURCE_SKILLS" "$GEMINI_TARGET" "Google Gemini"
 
 # Verify installations
 echo ""
 echo "Verifying installations..."
-VERIFY_MODE=$([ "$COPY_MODE" == "true" ] && echo "copy" || echo "symlink")
-verify_installation "$CLAUDE_TARGET" "$VERIFY_MODE"
-
-if [[ "$WITH_VSCODE_PROMPTS" == "true" ]]; then
-  verify_installation "$VSCODE_PROMPTS_TARGET" "$VERIFY_MODE"
-fi
+verify_installation "$CLAUDE_TARGET" "Claude Code"
+verify_installation "$COPILOT_TARGET" "GitHub Copilot"
+verify_installation "$CODEX_TARGET" "Codex"
+verify_installation "$CURSOR_TARGET" "Cursor"
+verify_installation "$GEMINI_TARGET" "Google Gemini"
 
 echo ""
 echo "✅ Installation complete!"
 echo ""
-echo "Next steps:"
-echo "  1. Restart Claude Code or VS Code"
-echo "  2. Type /just-dev-pipeline to start using skills"
-echo "  3. Run 'make test' to verify the installation"
+echo "Installed to:"
+echo "  • Claude Code: ~/.claude/skills"
+echo "  • GitHub Copilot: ~/.github/skills"
+echo "  • Codex: ~/.codex/skills"
+echo "  • Cursor: ~/.cursor/skills"
+echo "  • Google Gemini: ~/.gemini/skills"
 echo ""
-echo "To uninstall, run: ./scripts/uninstall-skills.sh"
+echo "Next steps:"
+echo "  1. Restart your AI assistant"
+echo "  2. Type /just-dev-pipeline to start using skills"
+echo ""
+echo "To update: run this script again"
+echo "To uninstall: ./scripts/uninstall-skills.sh --force"
