@@ -69,8 +69,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--name-strategy",
         default="split",
-        choices=["split", "concat", "id"],
-        help="Audio filename strategy: split (default), concat, or id",
+        choices=["split", "concat", "id", "global_text"],
+        help="Audio filename strategy: split (default), concat, id, or global_text",
     )
     parser.add_argument(
         "--upload-url-override",
@@ -158,6 +158,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Write <json>.audio-manifest.json (disabled by default)",
     )
+    parser.add_argument(
+        "--skip-verify-html",
+        action="store_true",
+        help="Do not write 一键音频验证.html next to output JSON",
+    )
     return parser.parse_args()
 
 
@@ -181,12 +186,26 @@ def sanitize_zh_segment(value: str) -> str:
     return f"zh-{digest}"
 
 
-def build_audio_stems(item_id: str, cn_text: str, en_text: str, strategy: str) -> Tuple[str, str]:
+def build_audio_stems(
+    item_id: str,
+    cn_text: str,
+    en_text: str,
+    strategy: str,
+    zh_voice: str,
+    en_voice: str,
+    zh_rate: str,
+    en_rate: str,
+) -> Tuple[str, str]:
     zh_seg = sanitize_zh_segment(cn_text) if cn_text else ""
     en_seg = sanitize_segment(en_text) if en_text else ""
 
     if strategy == "id":
         return item_id, item_id
+
+    if strategy == "global_text":
+        cn_digest = hashlib.md5(f"cn|{cn_text}|{zh_voice}|{zh_rate}".encode("utf-8")).hexdigest()[:6]
+        en_digest = hashlib.md5(f"en|{en_text}|{en_voice}|{en_rate}".encode("utf-8")).hexdigest()[:6]
+        return f"{zh_seg or item_id}-{cn_digest}", f"{en_seg or item_id}-{en_digest}"
 
     # Prevent collisions when words repeat in the same JSON.
     seed = f"{item_id}|{cn_text}|{en_text}"
@@ -391,6 +410,22 @@ def write_manifest(path: Path, manifest: Dict[str, Any]) -> None:
     path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def write_verify_html(output_json_path: Path, items: List[Dict[str, Any]]) -> Path:
+    template_path = Path(__file__).resolve().parent.parent / "templates" / "audio-verify.html"
+    if not template_path.exists():
+        raise WorkflowError(f"Audio verify template not found: {template_path}")
+
+    html = template_path.read_text(encoding="utf-8")
+    json_path_literal = json.dumps(str(output_json_path.resolve()), ensure_ascii=False)
+    embedded_json_literal = json.dumps(items, ensure_ascii=False, indent=2)
+    html = html.replace('const DEFAULT_JSON_PATH = "";', f"const DEFAULT_JSON_PATH = {json_path_literal};")
+    html = html.replace("const EMBEDDED_AUDIO_JSON = null;", f"const EMBEDDED_AUDIO_JSON = {embedded_json_literal};")
+
+    verify_html_path = output_json_path.parent / "一键音频验证.html"
+    verify_html_path.write_text(html, encoding="utf-8")
+    return verify_html_path
+
+
 def backup_file(path: Path) -> Path:
     ts = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     backup = path.with_suffix(path.suffix + f".bak.{ts}")
@@ -463,7 +498,16 @@ async def run() -> int:
                 )
                 continue
 
-            cn_stem, en_stem = build_audio_stems(item_id, cn_text, en_text, args.name_strategy)
+            cn_stem, en_stem = build_audio_stems(
+                item_id,
+                cn_text,
+                en_text,
+                args.name_strategy,
+                args.zh_voice,
+                args.en_voice,
+                args.zh_rate,
+                args.en_rate,
+            )
             cn_file = temp_dir / f"{cn_stem}_cn.mp3"
             en_file = temp_dir / f"{en_stem}_en.mp3"
 
@@ -472,8 +516,13 @@ async def run() -> int:
             if en_text:
                 await synthesize_to_file(en_text, args.en_voice, args.en_rate, en_file)
 
-            cn_key = f"{args.key_prefix.rstrip('/')}/{base_name}/{cn_stem}_cn.mp3"
-            en_key = f"{args.key_prefix.rstrip('/')}/{base_name}/{en_stem}_en.mp3"
+            key_prefix = args.key_prefix.rstrip("/")
+            if args.name_strategy == "global_text":
+                cn_key = f"{key_prefix}/{cn_stem}_cn.mp3"
+                en_key = f"{key_prefix}/{en_stem}_en.mp3"
+            else:
+                cn_key = f"{key_prefix}/{base_name}/{cn_stem}_cn.mp3"
+                en_key = f"{key_prefix}/{base_name}/{en_stem}_en.mp3"
 
             cn_url = ""
             en_url = ""
@@ -518,6 +567,7 @@ async def run() -> int:
 
     backup_path = ""
     output_json_path = str(json_path)
+    verify_html_path = ""
     if args.writeback_json and not args.dry_run:
         target_json_path = resolve_output_json_path(json_path, args.output_json_path)
         output_json_path = str(target_json_path)
@@ -529,6 +579,8 @@ async def run() -> int:
             target_json_path.parent.mkdir(parents=True, exist_ok=True)
 
         target_json_path.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+        if not args.skip_verify_html:
+            verify_html_path = str(write_verify_html(target_json_path, items))
 
     manifest_path = json_path.with_suffix(".audio-manifest.json")
     if args.write_manifest:
@@ -553,6 +605,8 @@ async def run() -> int:
         print(f"MANIFEST: {manifest_path}")
     if backup_path:
         print(f"BACKUP: {backup_path}")
+    if verify_html_path:
+        print(f"VERIFY_HTML: {verify_html_path}")
 
     return 0
 

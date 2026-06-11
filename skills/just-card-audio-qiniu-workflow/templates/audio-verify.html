@@ -184,6 +184,7 @@
 
     <script>
         const DEFAULT_JSON_PATH = "";
+        const EMBEDDED_AUDIO_JSON = null;
 
         const state = {
             items: [],
@@ -397,7 +398,13 @@
         });
 
         jsonPathEl.value = DEFAULT_JSON_PATH;
-        if (DEFAULT_JSON_PATH) {
+        if (Array.isArray(EMBEDDED_AUDIO_JSON)) {
+            state.items = EMBEDDED_AUDIO_JSON;
+            renderTable(state.items);
+            const cnCount = extractPlayable(state.items, "cn").length;
+            const enCount = extractPlayable(state.items, "en").length;
+            setStatus(`已加载内嵌 JSON: ${state.items.length} 条，中文音频 ${cnCount}，英文音频 ${enCount}`, "ok");
+        } else if (DEFAULT_JSON_PATH) {
             loadFromPath();
         } else {
             renderTable([]);

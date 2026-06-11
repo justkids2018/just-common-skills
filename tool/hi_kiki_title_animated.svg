@@ -1,0 +1,93 @@
+<svg width="720" height="240" viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFDF4"/>
+      <stop offset="100%" stop-color="#FFF0C8"/>
+    </linearGradient>
+    <linearGradient id="brown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7A4A22"/>
+      <stop offset="100%" stop-color="#3F2514"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#7A4A22" flood-opacity="0.20"/>
+    </filter>
+    <filter id="textShadow" x="-20%" y="-30%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#3F2514" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <style>
+    .badge {
+      transform-origin: 360px 120px;
+      animation: floatBadge 3.2s ease-in-out infinite;
+    }
+    .title {
+      font-family: "Fredoka", "Nunito", "Arial Rounded MT Bold", sans-serif;
+      font-weight: 900;
+      font-size: 92px;
+      fill: url(#brown);
+      filter: url(#textShadow);
+      letter-spacing: 2px;
+    }
+    .leaf {
+      transform-origin: center;
+      animation: leafPop 2.8s ease-in-out infinite;
+    }
+    .heart {
+      transform-origin: center;
+      animation: heartBeat 1.8s ease-in-out infinite;
+    }
+    .sparkle {
+      transform-origin: center;
+      animation: sparkle 2.2s ease-in-out infinite;
+    }
+    .stitch {
+      fill: none;
+      stroke: #E9C98D;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 12 14;
+      animation: dashMove 6s linear infinite;
+    }
+    @keyframes floatBadge {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.015); }
+    }
+    @keyframes heartBeat {
+      0%, 100% { transform: scale(1); }
+      35% { transform: scale(1.12); }
+      55% { transform: scale(0.96); }
+    }
+    @keyframes leafPop {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(-8deg) scale(1.08); }
+    }
+    @keyframes sparkle {
+      0%, 100% { opacity: .45; transform: scale(.85) rotate(0deg); }
+      50% { opacity: 1; transform: scale(1.15) rotate(12deg); }
+    }
+    @keyframes dashMove {
+      to { stroke-dashoffset: -80; }
+    }
+  </style>
+
+  <g class="badge">
+    <rect x="82" y="45" width="556" height="150" rx="56" fill="url(#cream)" filter="url(#softShadow)"/>
+    <rect x="94" y="57" width="532" height="126" rx="46" fill="none" stroke="#8ED96B" stroke-width="6"/>
+    <rect class="stitch" x="110" y="72" width="500" height="96" rx="34"/>
+
+    <text x="360" y="145" text-anchor="middle" class="title">Hi Kiki</text>
+
+    <path class="heart" d="M566 76 C566 63 582 59 589 70 C596 59 613 63 613 77 C613 94 589 106 589 106 C589 106 566 94 566 76Z" fill="#FF7FA0"/>
+
+    <g class="leaf">
+      <ellipse cx="532" cy="157" rx="12" ry="22" fill="#70C84F" transform="rotate(35 532 157)"/>
+      <ellipse cx="555" cy="150" rx="10" ry="19" fill="#8ED96B" transform="rotate(55 555 150)"/>
+      <path d="M525 171 C540 160 555 153 572 147" stroke="#5FAF42" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </g>
+
+    <g class="sparkle">
+      <path d="M126 92 L136 112 L158 116 L140 130 L145 152 L126 140 L107 152 L112 130 L94 116 L116 112Z" fill="#FFD65A"/>
+    </g>
+  </g>
+</svg>
